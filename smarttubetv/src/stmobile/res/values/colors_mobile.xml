@@ -75,14 +75,4 @@
     <color name="mobile_player_on_video">#FFFFFF</color>
     <color name="mobile_player_pill">#26FFFFFF</color>
     <color name="mobile_player_cast_active">#7CB0FF</color>
-
-    <!-- CometTube Femboy Secret Mode: Full Light Pastel Pink -->
-    <color name="femboy_pink_primary">#FF69B4</color>
-    <color name="femboy_pink_accent">#FF5E97</color>
-    <color name="femboy_pink_background">#FFF0F5</color>
-    <color name="femboy_pink_surface">#FFE4EC</color>
-    <color name="femboy_pink_card">#FFFFFF</color>
-    <color name="femboy_pink_field">#FFD9E5</color>
-    <color name="femboy_pink_text_primary">#2E081F</color>
-    <color name="femboy_pink_text_secondary">#783A5B</color>
 </resources>

@@ -643,9 +643,7 @@ final class CommentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             Context context = itemView.getContext();
             mLikeIcon.setImageResource(entry.liked ? R.drawable.ic_watch_thumb_up : R.drawable.ic_watch_thumb_up_outline);
 
-            int activeColor = ThemeMode.isFemboyMode()
-                    ? Color.parseColor("#FF69B4")
-                    : ContextCompat.getColor(context, R.color.mobile_color_primary);
+            int activeColor = ContextCompat.getColor(context, R.color.mobile_color_primary);
             mLikeIcon.setColorFilter(entry.liked ? activeColor
                     : ContextCompat.getColor(context, R.color.mobile_color_on_surface_secondary));
 

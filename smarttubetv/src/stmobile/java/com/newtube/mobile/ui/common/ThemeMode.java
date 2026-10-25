@@ -73,29 +73,7 @@ public final class ThemeMode {
 
     private static volatile int sMode = SYSTEM;
     private static volatile boolean sPureBlack;
-    private static volatile boolean sFemboyMode;
     private static final List<WeakReference<MobileActivity>> sScreens = new ArrayList<>();
-
-    public static boolean isFemboyMode() {
-        return sFemboyMode;
-    }
-
-    public static void setFemboyMode(@NonNull Activity activity, boolean enabled) {
-        if (sFemboyMode == enabled) {
-            return;
-        }
-        sFemboyMode = enabled;
-        if (enabled) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        } else {
-            AppCompatDelegate.setDefaultNightMode(appCompatMode(sMode));
-        }
-        for (MobileActivity screen : liveScreens()) {
-            if (!screen.isFinishing() && !screen.isDestroyed()) {
-                screen.recreate();
-            }
-        }
-    }
 
     private ThemeMode() {
     }
@@ -179,17 +157,11 @@ public final class ThemeMode {
 
     /** The look a screen should be drawn with now: {@link #desiredNight}, plus pure black. */
     public static int desiredLook(@NonNull Context context) {
-        if (sFemboyMode) {
-            return Configuration.UI_MODE_NIGHT_NO;
-        }
         return look(desiredNight(context), sPureBlack);
     }
 
     /** The look a themed context resolves with now: its night bits, plus pure black if its theme has it. */
     public static int currentLook(@NonNull Context context) {
-        if (sFemboyMode) {
-            return Configuration.UI_MODE_NIGHT_NO;
-        }
         return currentNight(context) | (hasPureBlack(context.getTheme()) ? LOOK_PURE_BLACK : 0);
     }
 
@@ -210,17 +182,12 @@ public final class ThemeMode {
      * is {@link #syncResources}'s job: a theme can't drop a style laid over it.
      */
     public static void applyPalette(@NonNull Context context) {
-        if (sFemboyMode) {
-            context.getTheme().applyStyle(R.style.ThemeOverlay_CometTube_Femboy, true);
-        } else if (wantsPureBlack(context) && !hasPureBlack(context.getTheme())) {
+        if (wantsPureBlack(context) && !hasPureBlack(context.getTheme())) {
             context.getTheme().applyStyle(R.style.ThemeOverlay_NewTube_PureBlack, true);
         }
     }
 
     private static boolean wantsPureBlack(@NonNull Context context) {
-        if (sFemboyMode) {
-            return false;
-        }
         return (look(currentNight(context), sPureBlack) & LOOK_PURE_BLACK) != 0;
     }
 
@@ -251,9 +218,7 @@ public final class ThemeMode {
         for (int style : styles) {
             fresh.applyStyle(style, true);
         }
-        if (sFemboyMode) {
-            fresh.applyStyle(R.style.ThemeOverlay_CometTube_Femboy, true);
-        } else if (pureBlack) {
+        if (pureBlack) {
             fresh.applyStyle(R.style.ThemeOverlay_NewTube_PureBlack, true);
         }
         return fresh;
@@ -286,9 +251,6 @@ public final class ThemeMode {
      * the override it was created with).
      */
     public static int desiredNight(@NonNull Context context) {
-        if (sFemboyMode) {
-            return Configuration.UI_MODE_NIGHT_NO; // Regardless of current theme: ALWAYS LIGHT PASTEL PINK!
-        }
         int forced = forcedNight(sMode);
         if (forced != Configuration.UI_MODE_NIGHT_UNDEFINED) {
             return forced;
@@ -305,9 +267,6 @@ public final class ThemeMode {
     }
 
     public static boolean isLight(@NonNull Context context) {
-        if (sFemboyMode) {
-            return true;
-        }
         return currentNight(context) != Configuration.UI_MODE_NIGHT_YES;
     }
 
@@ -388,9 +347,6 @@ public final class ThemeMode {
 
     /** {@link Configuration#UI_MODE_NIGHT_YES}/{@code NO} for a forced side, UNDEFINED for System default. */
     static int forcedNight(int mode) {
-        if (sFemboyMode) {
-            return Configuration.UI_MODE_NIGHT_NO;
-        }
         switch (mode) {
             case LIGHT:
                 return Configuration.UI_MODE_NIGHT_NO;

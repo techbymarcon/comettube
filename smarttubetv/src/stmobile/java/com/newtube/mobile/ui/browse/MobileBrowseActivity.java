@@ -1005,17 +1005,8 @@ public class MobileBrowseActivity extends MobileActivity
         "#shorts", "viral shorts", "trending shorts", "shorts funny", "shorts comedy",
         "shorts gaming", "shorts entertainment", "shorts satisfaction", "shorts music", "shorts dance"
     };
-    private static final String[] FEMBOY_SHORTS_QUERIES = {
-        "femboy cute aesthetic", "femboy shorts", "femboy tiktok", "cute femboy cosplay",
-        "kawaii femboy", "femboy style outfit", "femboy dance", "femboy anime aesthetic"
-    };
 
     private void openRandomShort() {
-        if (ThemeMode.isFemboyMode()) {
-            openRandomFemboyShort();
-            return;
-        }
-
         // Fresh session every time: clear cached feed and playlist
         com.newtube.mobile.ui.playback.MobilePlaybackActivity.sShortsPlaylist = null;
 
@@ -1105,93 +1096,6 @@ public class MobileBrowseActivity extends MobileActivity
             launchRandomShortFromList(fresh);
         } else {
             onSectionChosen(MediaGroup.TYPE_SHORTS);
-        }
-    }
-
-    private void openRandomFemboyShort() {
-        com.newtube.mobile.ui.playback.MobilePlaybackActivity.sShortsPlaylist = null;
-        mContentSwipe.setRefreshing(true);
-        try {
-            com.liskovsoft.mediaserviceinterfaces.ContentService service =
-                    YouTubeServiceManager.instance().getContentService();
-            if (service != null) {
-                String query = FEMBOY_SHORTS_QUERIES[new java.util.Random().nextInt(FEMBOY_SHORTS_QUERIES.length)];
-                com.liskovsoft.sharedutils.rx.RxHelper.execute(
-                        service.getSearchObserve(query),
-                        groups -> {
-                            runOnUiThread(() -> {
-                                mContentSwipe.setRefreshing(false);
-                                List<Video> raw = new ArrayList<>();
-                                if (groups != null) {
-                                    for (MediaGroup mg : groups) {
-                                        if (mg != null && mg.getMediaItems() != null) {
-                                            for (MediaItem item : mg.getMediaItems()) {
-                                                Video v = Video.from(item);
-                                                if (v != null && isFemboyVideo(v)) {
-                                                    raw.add(v);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                processAndLaunchShorts(raw);
-                            });
-                        },
-                        err -> {
-                            runOnUiThread(() -> {
-                                mContentSwipe.setRefreshing(false);
-                                onSectionChosen(MediaGroup.TYPE_SHORTS);
-                            });
-                        }
-                );
-                return;
-            }
-        } catch (Throwable t) {
-            mContentSwipe.setRefreshing(false);
-        }
-        onSectionChosen(MediaGroup.TYPE_SHORTS);
-    }
-
-    private void loadFemboyFeed() {
-        mContentSwipe.setRefreshing(true);
-        hideError();
-        try {
-            com.liskovsoft.mediaserviceinterfaces.ContentService service =
-                    YouTubeServiceManager.instance().getContentService();
-            if (service != null) {
-                com.liskovsoft.sharedutils.rx.RxHelper.execute(
-                        service.getSearchObserve("femboy cute aesthetic"),
-                        groups -> {
-                            runOnUiThread(() -> {
-                                mContentSwipe.setRefreshing(false);
-                                List<Video> femboyVideos = new ArrayList<>();
-                                if (groups != null) {
-                                    for (MediaGroup mg : groups) {
-                                        if (mg != null && mg.getMediaItems() != null) {
-                                            for (MediaItem item : mg.getMediaItems()) {
-                                                femboyVideos.add(Video.from(item));
-                                            }
-                                        }
-                                    }
-                                }
-                                mCurrentVideos.clear();
-                                for (Video v : femboyVideos) {
-                                    if (v != null && !isSearchQueryTile(v) && isFemboyVideo(v)) {
-                                        mCurrentVideos.add(v);
-                                    }
-                                }
-                                mAdapter.submitList(new ArrayList<>(mCurrentVideos));
-                                FeedCache.put(MediaGroup.TYPE_HOME, mCurrentVideos);
-                            });
-                        },
-                        err -> {
-                            runOnUiThread(() -> mContentSwipe.setRefreshing(false));
-                        }
-                );
-                return;
-            }
-        } catch (Throwable t) {
-            mContentSwipe.setRefreshing(false);
         }
     }
 
@@ -1561,13 +1465,6 @@ public class MobileBrowseActivity extends MobileActivity
         if (sectionId == MediaGroup.TYPE_SETTINGS) {
             syncNavHighlight(mCurrentSectionId); // keep highlight on the real current section
             openSettings();
-            return;
-        }
-
-        if (ThemeMode.isFemboyMode() && sectionId == MediaGroup.TYPE_HOME) {
-            mCurrentSectionId = sectionId;
-            syncNavHighlight(sectionId);
-            loadFemboyFeed();
             return;
         }
 
@@ -2809,29 +2706,9 @@ public class MobileBrowseActivity extends MobileActivity
         if (video == null) {
             return false;
         }
-        if (ThemeMode.isFemboyMode() && !isFemboyVideo(video)) {
-            return false;
-        }
         return (mCurrentSectionId == MediaGroup.TYPE_SHORTS || !ShortsFilter.isShort(video))
                 && (!video.isChannel() || video.isPlaylistAsChannel())
                 && !isSearchQueryTile(video);
-    }
-
-    public static boolean isFemboyVideo(Video video) {
-        if (video == null) {
-            return false;
-        }
-        String title = video.getTitle() != null ? video.getTitle().toLowerCase(java.util.Locale.ROOT) : "";
-        String author = video.getAuthor() != null ? video.getAuthor().toLowerCase(java.util.Locale.ROOT) : "";
-        String group = video.getGroupTitle() != null ? video.getGroupTitle().toLowerCase(java.util.Locale.ROOT) : "";
-        String full = title + " " + author + " " + group;
-
-        return full.contains("femboy") || full.contains("trap") || full.contains("crossdress")
-                || full.contains("astolfo") || full.contains("catboy") || full.contains("maid")
-                || full.contains("thigh high") || full.contains("kawaii") || full.contains("cute boy")
-                || full.contains("otokonoko") || full.contains("cosplay") || full.contains("skirt")
-                || full.contains("uwu") || full.contains("twink") || full.contains("feminine boy")
-                || full.contains("fem");
     }
 
     /**

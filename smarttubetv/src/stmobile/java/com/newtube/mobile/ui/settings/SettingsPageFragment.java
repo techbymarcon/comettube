@@ -80,8 +80,6 @@ public final class SettingsPageFragment extends Fragment implements SettingsAdap
         requireArguments().remove(ARG_HIGHLIGHT);
     }
 
-    private int mSecretTapCount = 0;
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -90,40 +88,12 @@ public final class SettingsPageFragment extends Fragment implements SettingsAdap
             view.findViewById(R.id.settings_back).setOnClickListener(
                     v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
 
-            View secretBtn = view.findViewById(R.id.btn_marcon_secret_mode);
-            TextView secretSub = view.findViewById(R.id.txt_secret_mode_sub);
-            if (ThemeMode.isFemboyMode()) {
-                secretSub.setText("Femboy Mode Active 🎀");
-            }
-            secretBtn.setOnClickListener(v -> {
-                if (ThemeMode.isFemboyMode()) {
-                    android.widget.Toast.makeText(requireContext(), "Femboy Mode is already active! 🎀", android.widget.Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                mSecretTapCount++;
-                if (mSecretTapCount < 5) {
-                    int remaining = 5 - mSecretTapCount;
-                    android.widget.Toast.makeText(requireContext(),
-                            "Click again " + remaining + " " + (remaining == 1 ? "time" : "times") + " to unlock secret mode",
-                            android.widget.Toast.LENGTH_SHORT).show();
-                } else {
-                    mSecretTapCount = 0;
-                    new MaterialAlertDialogBuilder(requireContext())
-                            .setTitle("✨ Secret Mode Unlocked")
-                            .setMessage("Femboy Mode Activated")
-                            .setPositiveButton("Yay! 🎀", (d, w) -> {
-                                ThemeMode.setFemboyMode(requireActivity(), true);
-                            })
-                            .show();
-                }
-            });
-
             view.findViewById(R.id.row_forked_from).setOnClickListener(v ->
                     Utils.openLinkExt(requireContext(), "https://github.com/marlon-og/newtube"));
             view.findViewById(R.id.row_source_code).setOnClickListener(v ->
-                    android.widget.Toast.makeText(requireContext(), "Source code repository coming soon!", android.widget.Toast.LENGTH_SHORT).show());
+                    Utils.openLinkExt(requireContext(), "https://github.com/techbymarcon/comettube"));
             view.findViewById(R.id.row_license).setOnClickListener(v ->
-                    android.widget.Toast.makeText(requireContext(), "License: Apache 2.0", android.widget.Toast.LENGTH_SHORT).show());
+                    Utils.openLinkExt(requireContext(), "https://github.com/techbymarcon/comettube/blob/main/LICENSE"));
 
             return view;
         }

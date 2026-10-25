@@ -8534,8 +8534,7 @@ public class MobilePlaybackActivity extends MobileActivity
         if (buttonId == R.id.action_thumbs_up && mWatchLikeIcon != null) {
             mWatchLikeIcon.setImageResource(on ? R.drawable.ic_watch_thumb_up : R.drawable.ic_watch_thumb_up_outline);
             if (on) {
-                int activeTint = ThemeMode.isFemboyMode()
-                        ? Color.parseColor("#FF69B4") : getColorInt(R.color.mobile_color_primary);
+                int activeTint = getColorInt(R.color.mobile_color_primary);
                 mWatchLikeIcon.setColorFilter(activeTint);
                 mWatchLikeIcon.animate()
                         .scaleX(1.32f).scaleY(1.32f).setDuration(140)
@@ -8572,7 +8571,7 @@ public class MobilePlaybackActivity extends MobileActivity
         } else if (buttonId == R.id.action_subscribe && mWatchSubscribe != null) {
             mWatchSubscribe.setText(on ? R.string.mobile_watch_subscribed : R.string.mobile_watch_subscribe);
             int tintColor = on ? getColorInt(R.color.mobile_color_subscribed_button)
-                    : (ThemeMode.isFemboyMode() ? Color.parseColor("#FF69B4") : getColorInt(R.color.mobile_color_inverse_surface));
+                    : getColorInt(R.color.mobile_color_inverse_surface);
             mWatchSubscribe.setBackgroundTintList(android.content.res.ColorStateList.valueOf(tintColor));
             mWatchSubscribe.setTextColor(getColorInt(on
                     ? R.color.mobile_color_on_surface : R.color.mobile_color_on_inverse_surface));

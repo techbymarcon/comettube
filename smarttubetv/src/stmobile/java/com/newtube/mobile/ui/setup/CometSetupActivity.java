@@ -248,6 +248,13 @@ public class CometSetupActivity extends Activity {
 
         mTitleTheme.setTextColor(isDark ? Color.WHITE : Color.parseColor("#111111"));
         mSubTheme.setTextColor(isDark ? Color.parseColor("#8E8E93") : Color.parseColor("#6E6E73"));
+
+        if (mBtnProceedTheme != null) {
+            mBtnProceedTheme.setBackgroundResource(isDark ? R.drawable.bg_liquid_glass_proceed : R.drawable.bg_pill_black);
+        }
+        if (mBtnProceedLanguage != null) {
+            mBtnProceedLanguage.setBackgroundResource(isDark ? R.drawable.bg_liquid_glass_proceed : R.drawable.bg_pill_black);
+        }
     }
 
     private void startRotatingGlobe() {
