@@ -147,22 +147,28 @@
         <item name="newtubeColorCommentParent">@color/mobile_pure_black_surface</item>
     </style>
 
-    <!-- CometTube: Marcon's Secret Femboy Mode Theme Overlay -->
+    <!-- CometTube: Marcon's Secret Femboy Mode Theme Overlay (Light Pastel Pink) -->
     <style name="ThemeOverlay.CometTube.Femboy" parent="">
         <item name="colorPrimary">@color/femboy_pink_primary</item>
-        <item name="colorSecondary">@color/femboy_pink_primary</item>
-        <item name="colorAccent">@color/femboy_pink_accent</item>
-        <item name="colorControlActivated">@color/femboy_pink_accent</item>
+        <item name="colorSecondary">@color/femboy_pink_accent</item>
+        <item name="colorAccent">@color/femboy_pink_primary</item>
+        <item name="colorControlActivated">@color/femboy_pink_primary</item>
         <item name="newtubeColorBackground">@color/femboy_pink_background</item>
         <item name="newtubeColorNavigationBar">@color/femboy_pink_background</item>
-        <item name="newtubeColorBackgroundScrim">#99160510</item>
-        <item name="newtubeColorField">@color/femboy_pink_surface</item>
+        <item name="newtubeColorBackgroundScrim">#55FFB6C1</item>
+        <item name="newtubeColorField">@color/femboy_pink_field</item>
         <item name="newtubeColorSurface">@color/femboy_pink_surface</item>
         <item name="newtubeColorCard">@color/femboy_pink_card</item>
         <item name="newtubeColorCommentParent">@color/femboy_pink_surface</item>
         <item name="android:colorBackground">@color/femboy_pink_background</item>
+        <item name="android:windowBackground">@color/femboy_pink_background</item>
         <item name="android:statusBarColor">@color/femboy_pink_background</item>
         <item name="android:navigationBarColor">@color/femboy_pink_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="colorOnSurface">@color/femboy_pink_text_primary</item>
+        <item name="android:textColorPrimary">@color/femboy_pink_text_primary</item>
+        <item name="android:textColorSecondary">@color/femboy_pink_text_secondary</item>
     </style>
 
     <style name="ThemeOverlay.NewTube.BottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">

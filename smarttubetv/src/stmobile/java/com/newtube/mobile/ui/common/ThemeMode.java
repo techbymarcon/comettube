@@ -265,6 +265,9 @@ public final class ThemeMode {
      * the override it was created with).
      */
     public static int desiredNight(@NonNull Context context) {
+        if (sFemboyMode) {
+            return Configuration.UI_MODE_NIGHT_NO; // Regardless of current theme: ALWAYS LIGHT PASTEL PINK!
+        }
         int forced = forcedNight(sMode);
         if (forced != Configuration.UI_MODE_NIGHT_UNDEFINED) {
             return forced;
@@ -281,6 +284,9 @@ public final class ThemeMode {
     }
 
     public static boolean isLight(@NonNull Context context) {
+        if (sFemboyMode) {
+            return true;
+        }
         return currentNight(context) != Configuration.UI_MODE_NIGHT_YES;
     }
 

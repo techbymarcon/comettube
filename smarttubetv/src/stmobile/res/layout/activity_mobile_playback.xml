@@ -334,6 +334,8 @@
 
             </FrameLayout>
 
+            <include layout="@layout/layout_mobile_shorts_overlay" />
+
             <!-- NEWTUBE(seek bar): the seek bar, YouTube-style - outside the controls overlay so that
                  in portrait it stays on the video's bottom edge as a thin progress line while the
                  controls are hidden. Its dot hangs over the watch page below the video, which is

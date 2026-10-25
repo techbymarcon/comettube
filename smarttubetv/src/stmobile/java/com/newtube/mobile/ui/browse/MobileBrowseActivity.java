@@ -39,7 +39,10 @@ import com.google.android.material.badge.BadgeDrawable;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.liskovsoft.mediaserviceinterfaces.data.MediaGroup;
+import com.liskovsoft.mediaserviceinterfaces.data.MediaItem;
 import com.liskovsoft.mediaserviceinterfaces.oauth.Account;
+import com.liskovsoft.youtubeapi.service.YouTubeServiceManager;
+import com.newtube.mobile.ui.common.ThemeMode;
 import com.liskovsoft.sharedutils.helpers.Helpers;
 import com.liskovsoft.smartyoutubetv2.tv.BuildConfig;
 import com.liskovsoft.smartyoutubetv2.common.app.models.data.BrowseSection;
@@ -988,8 +991,183 @@ public class MobileBrowseActivity extends MobileActivity
         } else {
             mSectionFromYou = false;
             hideYouPanel();
-            onSectionChosen(itemId - ITEM_ID_OFFSET);
+            int sectionId = itemId - ITEM_ID_OFFSET;
+            if (sectionId == MediaGroup.TYPE_SHORTS) {
+                openRandomShort();
+            } else {
+                onSectionChosen(sectionId);
+            }
         }
+    }
+
+    private void openRandomShort() {
+        if (ThemeMode.isFemboyMode()) {
+            openRandomFemboyShort();
+            return;
+        }
+
+        // 1. Try to find cached shorts
+        List<Video> shorts = FeedCache.getOrRestore(MediaGroup.TYPE_SHORTS);
+        if (shorts == null || shorts.isEmpty()) {
+            shorts = new ArrayList<>();
+            if (mCurrentVideos != null) {
+                for (Video v : mCurrentVideos) {
+                    if (ShortsFilter.isShort(v)) {
+                        shorts.add(v);
+                    }
+                }
+            }
+            List<Video> homeVideos = FeedCache.get(MediaGroup.TYPE_HOME);
+            if (homeVideos != null) {
+                for (Video v : homeVideos) {
+                    if (ShortsFilter.isShort(v)) {
+                        shorts.add(v);
+                    }
+                }
+            }
+        }
+        if (shorts != null && !shorts.isEmpty()) {
+            launchRandomShortFromList(shorts);
+            return;
+        }
+
+        // 2. Fetch fresh shorts using RxHelper
+        mContentSwipe.setRefreshing(true);
+        try {
+            com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                    YouTubeServiceManager.instance().getContentService();
+            if (service != null) {
+                com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                        service.getShortsObserve(),
+                        group -> {
+                            runOnUiThread(() -> {
+                                mContentSwipe.setRefreshing(false);
+                                List<Video> videos = new ArrayList<>();
+                                if (group != null && group.getMediaItems() != null) {
+                                    for (MediaItem item : group.getMediaItems()) {
+                                        videos.add(Video.from(item));
+                                    }
+                                }
+                                if (!videos.isEmpty()) {
+                                    FeedCache.put(MediaGroup.TYPE_SHORTS, videos);
+                                    launchRandomShortFromList(videos);
+                                } else {
+                                    onSectionChosen(MediaGroup.TYPE_SHORTS);
+                                }
+                            });
+                        },
+                        err -> {
+                            runOnUiThread(() -> {
+                                mContentSwipe.setRefreshing(false);
+                                onSectionChosen(MediaGroup.TYPE_SHORTS);
+                            });
+                        }
+                );
+                return;
+            }
+        } catch (Throwable t) {
+            mContentSwipe.setRefreshing(false);
+        }
+        onSectionChosen(MediaGroup.TYPE_SHORTS);
+    }
+
+    private void openRandomFemboyShort() {
+        mContentSwipe.setRefreshing(true);
+        try {
+            com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                    YouTubeServiceManager.instance().getContentService();
+            if (service != null) {
+                com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                        service.getSearchObserve("femboy shorts"),
+                        groups -> {
+                            runOnUiThread(() -> {
+                                mContentSwipe.setRefreshing(false);
+                                List<Video> results = new ArrayList<>();
+                                if (groups != null) {
+                                    for (MediaGroup mg : groups) {
+                                        if (mg != null && mg.getMediaItems() != null) {
+                                            for (MediaItem item : mg.getMediaItems()) {
+                                                results.add(Video.from(item));
+                                            }
+                                        }
+                                    }
+                                }
+                                if (!results.isEmpty()) {
+                                    launchRandomShortFromList(results);
+                                } else {
+                                    onSectionChosen(MediaGroup.TYPE_SHORTS);
+                                }
+                            });
+                        },
+                        err -> {
+                            runOnUiThread(() -> {
+                                mContentSwipe.setRefreshing(false);
+                                onSectionChosen(MediaGroup.TYPE_SHORTS);
+                            });
+                        }
+                );
+                return;
+            }
+        } catch (Throwable t) {
+            mContentSwipe.setRefreshing(false);
+        }
+        onSectionChosen(MediaGroup.TYPE_SHORTS);
+    }
+
+    private void loadFemboyFeed() {
+        mContentSwipe.setRefreshing(true);
+        hideError();
+        try {
+            com.liskovsoft.mediaserviceinterfaces.ContentService service =
+                    YouTubeServiceManager.instance().getContentService();
+            if (service != null) {
+                com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                        service.getSearchObserve("femboy cute aesthetic"),
+                        groups -> {
+                            runOnUiThread(() -> {
+                                mContentSwipe.setRefreshing(false);
+                                List<Video> femboyVideos = new ArrayList<>();
+                                if (groups != null) {
+                                    for (MediaGroup mg : groups) {
+                                        if (mg != null && mg.getMediaItems() != null) {
+                                            for (MediaItem item : mg.getMediaItems()) {
+                                                femboyVideos.add(Video.from(item));
+                                            }
+                                        }
+                                    }
+                                }
+                                mCurrentVideos.clear();
+                                for (Video v : femboyVideos) {
+                                    if (v != null && !isSearchQueryTile(v)) {
+                                        mCurrentVideos.add(v);
+                                    }
+                                }
+                                mAdapter.submitList(new ArrayList<>(mCurrentVideos));
+                                FeedCache.put(MediaGroup.TYPE_HOME, mCurrentVideos);
+                            });
+                        },
+                        err -> {
+                            runOnUiThread(() -> mContentSwipe.setRefreshing(false));
+                        }
+                );
+                return;
+            }
+        } catch (Throwable t) {
+            mContentSwipe.setRefreshing(false);
+        }
+    }
+
+    private void launchRandomShortFromList(List<Video> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        int randomIndex = new java.util.Random().nextInt(list.size());
+        Video selected = list.get(randomIndex);
+        selected.isShorts = true;
+        com.newtube.mobile.ui.playback.MobilePlaybackActivity.sForceShortsMode = true;
+        com.newtube.mobile.ui.playback.MobilePlaybackActivity.sShortsPlaylist = new ArrayList<>(list);
+        com.newtube.mobile.ui.playback.MobilePlaybackActivity.sCurrentShortIndex = randomIndex;
+        onVideoClicked(selected);
     }
 
     /** A long way down, jump most of it first: the glide covers the last few rows only. */
@@ -1345,6 +1523,13 @@ public class MobileBrowseActivity extends MobileActivity
         if (sectionId == MediaGroup.TYPE_SETTINGS) {
             syncNavHighlight(mCurrentSectionId); // keep highlight on the real current section
             openSettings();
+            return;
+        }
+
+        if (ThemeMode.isFemboyMode() && sectionId == MediaGroup.TYPE_HOME) {
+            mCurrentSectionId = sectionId;
+            syncNavHighlight(sectionId);
+            loadFemboyFeed();
             return;
         }
 
@@ -2583,10 +2768,32 @@ public class MobileBrowseActivity extends MobileActivity
     }
 
     private boolean isVisibleFeedItem(Video video) {
-        return video != null
-                && (mCurrentSectionId == MediaGroup.TYPE_SHORTS || !ShortsFilter.isShort(video))
+        if (video == null) {
+            return false;
+        }
+        if (ThemeMode.isFemboyMode() && !isFemboyVideo(video)) {
+            return false;
+        }
+        return (mCurrentSectionId == MediaGroup.TYPE_SHORTS || !ShortsFilter.isShort(video))
                 && (!video.isChannel() || video.isPlaylistAsChannel())
                 && !isSearchQueryTile(video);
+    }
+
+    public static boolean isFemboyVideo(Video video) {
+        if (video == null) {
+            return false;
+        }
+        String title = video.getTitle() != null ? video.getTitle().toLowerCase(java.util.Locale.ROOT) : "";
+        String author = video.getAuthor() != null ? video.getAuthor().toLowerCase(java.util.Locale.ROOT) : "";
+        String group = video.getGroupTitle() != null ? video.getGroupTitle().toLowerCase(java.util.Locale.ROOT) : "";
+        String full = title + " " + author + " " + group;
+
+        return full.contains("femboy") || full.contains("trap") || full.contains("crossdress")
+                || full.contains("astolfo") || full.contains("catboy") || full.contains("maid")
+                || full.contains("thigh high") || full.contains("kawaii") || full.contains("cute boy")
+                || full.contains("otokonoko") || full.contains("cosplay") || full.contains("skirt")
+                || full.contains("uwu") || full.contains("twink") || full.contains("feminine boy")
+                || full.contains("fem");
     }
 
     /**

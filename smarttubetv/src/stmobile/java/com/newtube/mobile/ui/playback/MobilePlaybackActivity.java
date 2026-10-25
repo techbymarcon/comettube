@@ -2,7 +2,10 @@ package com.newtube.mobile.ui.playback;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
+import android.view.animation.LinearInterpolator;
+import com.newtube.mobile.ui.common.ShortsFilter;
 import android.app.PictureInPictureParams;
 import android.app.RemoteAction;
 import android.content.BroadcastReceiver;
@@ -224,6 +227,36 @@ public class MobilePlaybackActivity extends MobileActivity
     private ImageButton mPrevButton;
     private ImageButton mNextButton;
     private ViewGroup mDebugViewGroup;
+
+    // Shorts vertical playback support
+    public static boolean sForceShortsMode = false;
+    public static java.util.List<com.liskovsoft.smartyoutubetv2.common.app.models.data.Video> sShortsPlaylist = null;
+    public static int sCurrentShortIndex = 0;
+
+    private boolean mIsShortsMode = false;
+    private View mShortsOverlayRoot;
+    private TextView mShortsHeaderTitle;
+    private ImageButton mShortsBtnMute;
+    private ImageButton mShortsBtnSubtitles;
+    private ImageButton mShortsBtnSearch;
+    private ImageButton mShortsBtnMore;
+    private ImageButton mShortsBtnLike;
+    private TextView mShortsTextLikeCount;
+    private ImageButton mShortsBtnComment;
+    private TextView mShortsTextCommentCount;
+    private ImageButton mShortsBtnShare;
+    private TextView mShortsTextShareLabel;
+    private ImageButton mShortsBtnRemix;
+    private TextView mShortsTextRemixLabel;
+    private ImageView mShortsImgSoundDisc;
+    private ImageView mShortsChannelAvatar;
+    private TextView mShortsChannelName;
+    private TextView mShortsBtnSubscribe;
+    private TextView mShortsVideoTitle;
+    private TextView mShortsAudioTitle;
+    private ProgressBar mShortsProgressBar;
+    private View mShortsProgressThumb;
+    private ObjectAnimator mSoundDiscAnimator;
 
     // Casting (Route B scaffolding): cast button + the "Playing on TV" remote panel. The panel is
     // self-contained (own seek bar driven by CastEvents) so the local transport stays untouched.
@@ -496,6 +529,11 @@ public class MobilePlaybackActivity extends MobileActivity
         setupVideoSurface();
         setupControls();
         setupWatchContent();
+        setupShortsOverlay();
+
+        com.liskovsoft.smartyoutubetv2.common.app.models.data.Video initVid =
+                mPresenter != null ? mPresenter.getVideo() : null;
+        mIsShortsMode = sForceShortsMode || (initVid != null && (initVid.isShorts || initVid.belongsToShorts() || ShortsFilter.isShort(initVid)));
 
         int orientation = layoutOrientation();
         applyWatchLayoutForOrientation(orientation);
@@ -1093,6 +1131,209 @@ public class MobilePlaybackActivity extends MobileActivity
         updateButtonVisual(R.id.action_subscribe, BUTTON_OFF);
     }
 
+    private void setupShortsOverlay() {
+        mShortsOverlayRoot = findViewById(R.id.shorts_overlay_root);
+        if (mShortsOverlayRoot == null) {
+            return;
+        }
+
+        mShortsHeaderTitle = findViewById(R.id.shorts_header_title);
+        mShortsBtnMute = findViewById(R.id.shorts_btn_mute);
+        mShortsBtnSubtitles = findViewById(R.id.shorts_btn_subtitles);
+        mShortsBtnSearch = findViewById(R.id.shorts_btn_search);
+        mShortsBtnMore = findViewById(R.id.shorts_btn_more);
+        mShortsBtnLike = findViewById(R.id.shorts_btn_like);
+        mShortsTextLikeCount = findViewById(R.id.shorts_text_like_count);
+        mShortsBtnComment = findViewById(R.id.shorts_btn_comment);
+        mShortsTextCommentCount = findViewById(R.id.shorts_text_comment_count);
+        mShortsBtnShare = findViewById(R.id.shorts_btn_share);
+        mShortsTextShareLabel = findViewById(R.id.shorts_text_share_label);
+        mShortsBtnRemix = findViewById(R.id.shorts_btn_remix);
+        mShortsTextRemixLabel = findViewById(R.id.shorts_text_remix_label);
+        mShortsImgSoundDisc = findViewById(R.id.shorts_img_sound_disc);
+        mShortsChannelAvatar = findViewById(R.id.shorts_channel_avatar);
+        mShortsChannelName = findViewById(R.id.shorts_channel_name);
+        mShortsBtnSubscribe = findViewById(R.id.shorts_btn_subscribe);
+        mShortsVideoTitle = findViewById(R.id.shorts_video_title);
+        mShortsAudioTitle = findViewById(R.id.shorts_audio_title);
+        mShortsProgressBar = findViewById(R.id.shorts_progress_bar);
+        mShortsProgressThumb = findViewById(R.id.shorts_progress_thumb);
+
+        // Rotating sound disc animation
+        if (mShortsImgSoundDisc != null) {
+            mSoundDiscAnimator = ObjectAnimator.ofFloat(mShortsImgSoundDisc, "rotation", 0f, 360f);
+            mSoundDiscAnimator.setDuration(4000);
+            mSoundDiscAnimator.setRepeatCount(ObjectAnimator.INFINITE);
+            mSoundDiscAnimator.setInterpolator(new LinearInterpolator());
+            mSoundDiscAnimator.start();
+        }
+
+        // Mute / Unmute
+        if (mShortsBtnMute != null) {
+            mShortsBtnMute.setOnClickListener(v -> {
+                if (mPlayer != null) {
+                    boolean muted = mPlayer.getVolume() == 0f;
+                    mPlayer.setVolume(muted ? 1f : 0f);
+                    mShortsBtnMute.setImageResource(muted ? R.drawable.ic_player_volume_up : R.drawable.ic_player_volume_off);
+                    Haptics.tick(mShortsBtnMute);
+                }
+            });
+        }
+
+        // Subtitles
+        if (mShortsBtnSubtitles != null) {
+            mShortsBtnSubtitles.setOnClickListener(v -> {
+                onActionButtonClicked(R.id.lb_control_closed_captioning);
+                Haptics.tick(mShortsBtnSubtitles);
+            });
+        }
+
+        // Search
+        if (mShortsBtnSearch != null) {
+            mShortsBtnSearch.setOnClickListener(v -> {
+                startActivity(new Intent(this, com.newtube.mobile.ui.search.MobileSearchActivity.class));
+            });
+        }
+
+        // More settings menu
+        if (mShortsBtnMore != null) {
+            mShortsBtnMore.setOnClickListener(v -> openPlayerMenu());
+        }
+
+        // Like button
+        if (mShortsBtnLike != null) {
+            mShortsBtnLike.setOnClickListener(v -> {
+                Haptics.click(mShortsBtnLike);
+                onActionButtonClicked(R.id.action_thumbs_up);
+                boolean on = getButtonState(R.id.action_thumbs_up) == BUTTON_ON;
+                mShortsBtnLike.setImageResource(on ? R.drawable.ic_shorts_heart_fill : R.drawable.ic_shorts_heart);
+                mShortsBtnLike.animate().scaleX(1.35f).scaleY(1.35f).setDuration(150)
+                        .setInterpolator(new OvershootInterpolator(2.5f))
+                        .withEndAction(() -> mShortsBtnLike.animate().scaleX(1f).scaleY(1f).setDuration(120).start())
+                        .start();
+            });
+        }
+
+        // Comment button
+        if (mShortsBtnComment != null) {
+            mShortsBtnComment.setOnClickListener(v -> {
+                Haptics.tick(mShortsBtnComment);
+                onCommentsEntryClicked();
+            });
+        }
+
+        // Share button
+        if (mShortsBtnShare != null) {
+            mShortsBtnShare.setOnClickListener(v -> {
+                Haptics.tick(mShortsBtnShare);
+                com.liskovsoft.smartyoutubetv2.common.app.models.data.Video video = getVideo();
+                if (video != null && video.videoId != null) {
+                    Intent sendIntent = new Intent();
+                    sendIntent.setAction(Intent.ACTION_SEND);
+                    sendIntent.putExtra(Intent.EXTRA_TEXT, "https://youtu.be/" + video.videoId);
+                    sendIntent.setType("text/plain");
+                    startActivity(Intent.createChooser(sendIntent, getString(R.string.mobile_watch_share)));
+                }
+            });
+        }
+
+        // Subscribe button
+        if (mShortsBtnSubscribe != null) {
+            mShortsBtnSubscribe.setOnClickListener(v -> onSubscribeTapped());
+        }
+
+        // Tap on screen toggles play/pause
+        mShortsOverlayRoot.setOnClickListener(v -> {
+            togglePlayPause();
+        });
+    }
+
+    private void applyShortsModeUI(boolean enabled) {
+        mIsShortsMode = enabled;
+        if (mShortsOverlayRoot != null) {
+            mShortsOverlayRoot.setVisibility(enabled ? View.VISIBLE : View.GONE);
+        }
+        if (mWatchScroll != null) {
+            mWatchScroll.setVisibility(enabled ? View.GONE : View.VISIBLE);
+        }
+        if (mControlsRoot != null) {
+            mControlsRoot.setVisibility(enabled ? View.GONE : (mControlsVisible ? View.VISIBLE : View.GONE));
+        }
+        if (mTimeBar != null) {
+            mTimeBar.setVisibility(enabled ? View.GONE : View.VISIBLE);
+        }
+        if (mVideoArea != null) {
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) mVideoArea.getLayoutParams();
+            if (enabled) {
+                lp.height = LinearLayout.LayoutParams.MATCH_PARENT;
+                lp.weight = 0;
+            } else if (!isLandscape()) {
+                Configuration config = getResources().getConfiguration();
+                int width = Math.round(config.screenWidthDp * getResources().getDisplayMetrics().density);
+                lp.height = inlineBoxHeight(width);
+                lp.weight = 0;
+            }
+            mVideoArea.setLayoutParams(lp);
+        }
+        if (mPlayerView != null) {
+            mPlayerView.setResizeMode(enabled
+                    ? com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants.RESIZE_MODE_FIT_BOTH
+                    : com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants.RESIZE_MODE_DEFAULT);
+        }
+        if (enabled) {
+            com.liskovsoft.smartyoutubetv2.common.app.models.data.Video current = getVideo();
+            if (current != null) {
+                bindShortsVideoData(current);
+            }
+        }
+    }
+
+    private void bindShortsVideoData(com.liskovsoft.smartyoutubetv2.common.app.models.data.Video video) {
+        if (video == null) {
+            return;
+        }
+        if (mShortsVideoTitle != null && !TextUtils.isEmpty(video.getTitle())) {
+            mShortsVideoTitle.setText(video.getTitle());
+        }
+        if (mShortsAudioTitle != null && !TextUtils.isEmpty(video.getTitle())) {
+            mShortsAudioTitle.setText(video.getTitle());
+        }
+        if (mShortsChannelName != null && !TextUtils.isEmpty(video.getAuthor())) {
+            mShortsChannelName.setText("@" + video.getAuthor().replace(" ", ""));
+        }
+        if (mShortsChannelAvatar != null) {
+            mShortsChannelAvatar.setImageResource(R.drawable.ic_watch_channel_placeholder);
+        }
+    }
+
+    public void playNextShort() {
+        if (sShortsPlaylist != null && !sShortsPlaylist.isEmpty()) {
+            sCurrentShortIndex = (sCurrentShortIndex + 1) % sShortsPlaylist.size();
+            com.liskovsoft.smartyoutubetv2.common.app.models.data.Video nextShort = sShortsPlaylist.get(sCurrentShortIndex);
+            nextShort.isShorts = true;
+            sForceShortsMode = true;
+            if (mPresenter != null) {
+                mPresenter.openVideo(nextShort);
+            }
+        } else if (mPresenter != null) {
+            mPresenter.onNextClicked();
+        }
+    }
+
+    public void playPreviousShort() {
+        if (sShortsPlaylist != null && !sShortsPlaylist.isEmpty()) {
+            sCurrentShortIndex = (sCurrentShortIndex - 1 + sShortsPlaylist.size()) % sShortsPlaylist.size();
+            com.liskovsoft.smartyoutubetv2.common.app.models.data.Video prevShort = sShortsPlaylist.get(sCurrentShortIndex);
+            prevShort.isShorts = true;
+            sForceShortsMode = true;
+            if (mPresenter != null) {
+                mPresenter.openVideo(prevShort);
+            }
+        } else if (mPresenter != null) {
+            mPresenter.onPreviousClicked();
+        }
+    }
+
     /**
      * Portrait: 16:9 video box pinned at the top, scrollable watch content filling the rest.
      * Landscape: hide the content and let the video fill the whole screen (PLAYER POLISH immersive).
@@ -1103,6 +1344,28 @@ public class MobilePlaybackActivity extends MobileActivity
         }
 
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) mVideoArea.getLayoutParams();
+
+        if (mIsShortsMode) {
+            lp.height = LinearLayout.LayoutParams.MATCH_PARENT;
+            lp.weight = 0;
+            mVideoArea.setLayoutParams(lp);
+            if (mWatchScroll != null) {
+                mWatchScroll.setVisibility(View.GONE);
+            }
+            if (mControlsRoot != null) {
+                mControlsRoot.setVisibility(View.GONE);
+            }
+            if (mTimeBar != null) {
+                mTimeBar.setVisibility(View.GONE);
+            }
+            if (mShortsOverlayRoot != null) {
+                mShortsOverlayRoot.setVisibility(View.VISIBLE);
+            }
+            if (mPlayerView != null) {
+                mPlayerView.setResizeMode(com.liskovsoft.smartyoutubetv2.common.app.models.playback.manager.PlayerConstants.RESIZE_MODE_FIT_BOTH);
+            }
+            return;
+        }
 
         // Pinch-zoom is a fullscreen gesture (the portrait 16:9 box keeps its two-finger touches
         // for nothing - matching YouTube, which only zooms in fullscreen).
@@ -1693,6 +1956,10 @@ public class MobilePlaybackActivity extends MobileActivity
 
     @Override
     protected void onDestroy() {
+        sForceShortsMode = false;
+        if (mSoundDiscAnimator != null) {
+            mSoundDiscAnimator.cancel();
+        }
         DownloadRegistry.instance(this).removeListener(mDownloadsListener);
         MobileSheets.setPlayerShown(false, false);
         cancelAutoHide();
@@ -2467,7 +2734,7 @@ public class MobilePlaybackActivity extends MobileActivity
     }
 
     private void applyPortraitVideoHeight(int width) {
-        if (mVideoArea == null || width <= 0) {
+        if (mIsShortsMode || mVideoArea == null || width <= 0) {
             return;
         }
         LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) mVideoArea.getLayoutParams();
@@ -2485,6 +2752,9 @@ public class MobilePlaybackActivity extends MobileActivity
      * than the screen and bury the watch page - there it stops at 60% of the window height.
      */
     private int inlineBoxHeight(int width) {
+        if (mIsShortsMode) {
+            return ViewGroup.LayoutParams.MATCH_PARENT;
+        }
         int height = Math.round(width * 9f / 16f);
         Configuration config = getResources().getConfiguration();
         if (config.orientation == Configuration.ORIENTATION_LANDSCAPE && config.screenHeightDp > 0) {
@@ -3511,6 +3781,9 @@ public class MobilePlaybackActivity extends MobileActivity
     }
 
     private void showControlsInternal(boolean animate) {
+        if (mIsShortsMode) {
+            return;
+        }
         mControlsVisible = true;
         mControlsRoot.setVisibility(View.VISIBLE);
         mControlsRoot.animate().cancel();
@@ -4533,7 +4806,7 @@ public class MobilePlaybackActivity extends MobileActivity
         if (mIsStopped) {
             return;
         }
-        if (mControlsVisible) {
+        if (mControlsVisible || mIsShortsMode) {
             Utils.postDelayed(mProgressUpdateRunnable, 0);
         } else if (mTimeBar != null && mTimeBar.isLineShownWhenHidden()) {
             Utils.postDelayed(mLineUpdateRunnable, 0);
@@ -4599,6 +4872,11 @@ public class MobilePlaybackActivity extends MobileActivity
             mTimeBar.setDuration(duration);
             mTimeBar.setPosition(position);
             mTimeBar.setBufferedPosition(buffered);
+
+            if (mIsShortsMode && mShortsProgressBar != null && duration > 0) {
+                int prog = (int) (position * 1000 / duration);
+                mShortsProgressBar.setProgress(prog);
+            }
             setTextIfChanged(mPositionView, formatTime(position));
             setTextIfChanged(mDurationView, getString(R.string.mobile_player_duration, formatTime(duration)));
             updateLiveChip(position, duration);
@@ -5336,6 +5614,14 @@ public class MobilePlaybackActivity extends MobileActivity
         }
         mSwipeDownRawX = downRawX;
         boolean vertical = direction == PlayerContainerLayout.UP || direction == PlayerContainerLayout.DOWN;
+        if (mIsShortsMode && vertical) {
+            if (direction == PlayerContainerLayout.UP) {
+                playNextShort();
+            } else {
+                playPreviousShort();
+            }
+            return PlayerContainerLayout.SWIPE_NONE;
+        }
         if (!vertical) {
             return beginSeekSwipe(downRawX + dx);
         }
@@ -6686,6 +6972,17 @@ public class MobilePlaybackActivity extends MobileActivity
     @Override
     public void setChannelIcon(String iconUrl) {
         runOnUiThread(() -> {
+            if (mShortsChannelAvatar != null) {
+                if (TextUtils.isEmpty(iconUrl)) {
+                    mShortsChannelAvatar.setImageResource(R.drawable.ic_watch_channel_placeholder);
+                } else {
+                    Glide.with(this)
+                            .load(iconUrl)
+                            .circleCrop()
+                            .placeholder(R.drawable.ic_watch_channel_placeholder)
+                            .into(mShortsChannelAvatar);
+                }
+            }
             if (mWatchAvatar == null) {
                 return;
             }
@@ -7745,6 +8042,9 @@ public class MobilePlaybackActivity extends MobileActivity
             return;
         }
 
+        mIsShortsMode = sForceShortsMode || item.isShorts || item.belongsToShorts() || ShortsFilter.isShort(item);
+        applyShortsModeUI(mIsShortsMode);
+
         mWatchVideo = item;
         boolean isNewVideo = !Helpers.equals(item.videoId, mWatchVideoId);
 
@@ -7888,6 +8188,28 @@ public class MobilePlaybackActivity extends MobileActivity
     private void bindWatchMetadata(MediaItemMetadata metadata) {
         if (metadata == null) {
             return;
+        }
+
+        if (mIsShortsMode) {
+            if (mShortsChannelName != null && !TextUtils.isEmpty(metadata.getAuthor())) {
+                mShortsChannelName.setText("@" + metadata.getAuthor().replace(" ", ""));
+            }
+            if (mShortsVideoTitle != null && !TextUtils.isEmpty(metadata.getTitle())) {
+                mShortsVideoTitle.setText(metadata.getTitle());
+            }
+            if (mShortsAudioTitle != null) {
+                mShortsAudioTitle.setText(!TextUtils.isEmpty(metadata.getTitle()) ? metadata.getTitle() : "Original Sound");
+            }
+            if (mShortsTextLikeCount != null && !TextUtils.isEmpty(metadata.getLikeCount())) {
+                mShortsTextLikeCount.setText(metadata.getLikeCount());
+            }
+            if (mShortsChannelAvatar != null && !TextUtils.isEmpty(metadata.getAuthorImageUrl())) {
+                com.bumptech.glide.Glide.with(this)
+                        .load(metadata.getAuthorImageUrl())
+                        .circleCrop()
+                        .placeholder(R.drawable.ic_mobile_account)
+                        .into(mShortsChannelAvatar);
+            }
         }
 
         {
@@ -8145,6 +8467,16 @@ public class MobilePlaybackActivity extends MobileActivity
 
     private void updateButtonVisual(int buttonId, int buttonState) {
         boolean on = buttonState == BUTTON_ON;
+
+        if (mIsShortsMode) {
+            if (buttonId == R.id.action_thumbs_up && mShortsBtnLike != null) {
+                mShortsBtnLike.setImageResource(on ? R.drawable.ic_shorts_heart_fill : R.drawable.ic_shorts_heart);
+            } else if (buttonId == R.id.action_subscribe && mShortsBtnSubscribe != null) {
+                mShortsBtnSubscribe.setText(on ? R.string.mobile_watch_subscribed : R.string.mobile_watch_subscribe);
+                mShortsBtnSubscribe.setBackgroundResource(on ? R.drawable.bg_shorts_subscribed : R.drawable.bg_shorts_subscribe);
+                mShortsBtnSubscribe.setTextColor(on ? Color.WHITE : Color.BLACK);
+            }
+        }
 
         if (buttonId == R.id.action_thumbs_up && mWatchLikeIcon != null) {
             mWatchLikeIcon.setImageResource(on ? R.drawable.ic_watch_thumb_up : R.drawable.ic_watch_thumb_up_outline);
