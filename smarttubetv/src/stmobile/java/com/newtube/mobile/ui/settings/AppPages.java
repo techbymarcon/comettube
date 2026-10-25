@@ -94,7 +94,7 @@ final class AppPages {
         for (Map.Entry<Integer, Integer> section : sidebar.getDefaultSections().entrySet()) {
             int sectionId = section.getValue();
             boolean current = sectionId == boot;
-            if (!current && (sectionId == MediaGroup.TYPE_SHORTS || sectionId == MediaGroup.TYPE_SETTINGS
+            if (!current && (sectionId == MediaGroup.TYPE_SETTINGS
                     || !sidebar.isSectionPinned(sectionId))) {
                 continue;
             }
@@ -246,7 +246,7 @@ final class AppPages {
                                           int[] order, boolean keepOrder) {
         SidebarService sidebar = SidebarService.instance(context);
         for (int sectionId : order) {
-            if (sectionId == MediaGroup.TYPE_SETTINGS || sectionId == MediaGroup.TYPE_SHORTS) {
+            if (sectionId == MediaGroup.TYPE_SETTINGS) {
                 continue;
             }
             Integer titleRes = null;

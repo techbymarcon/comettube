@@ -68,8 +68,8 @@ public class PlayerTimeBar extends View implements TimeBar {
         void onReleaseToCancel(boolean armed);
     }
 
-    static final int PLAYED_COLOR = 0xFFFF0033;
-    static final int PLAYED_TAIL_COLOR = 0xFFFF2791;
+    static final int PLAYED_COLOR = 0xFF3894FF;
+    static final int PLAYED_TAIL_COLOR = 0xFF7CB0FF;
     static final int BUFFERED_COLOR = 0x80FFFFFF;
     static final int UNPLAYED_COLOR = 0x33FFFFFF;
 

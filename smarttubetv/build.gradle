@@ -48,7 +48,7 @@ abstract class CopyRenamedApks extends DefaultTask {
         builtArtifacts.elements.each { artifact ->
             def abi = artifact.filters.find { it.filterType.toString() == 'ABI' }?.identifier ?: 'universal'
             def version = artifact.versionName ?: 'unknown'
-            def outputFile = new File(outputDirectory, "NewTube_${version}_${nameTag.get()}${abi}.apk")
+            def outputFile = new File(outputDirectory, "CometTube_${version}_${nameTag.get()}${abi}.apk")
             Files.copy(new File(artifact.outputFile).toPath(), outputFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
         }
     }
@@ -157,7 +157,7 @@ android {
     
     defaultConfig {
         // values linked with applicationId: searchable.searchSuggestAuthority, searchable.searchSuggestIntentData, VideoContract.CONTENT_AUTHORITY
-        applicationId "app.smarttube"
+        applicationId "com.comettube"
         minSdk = project.ext.minSdkVersion
         targetSdk = project.ext.targetSdkVersion
         versionCode 2387
@@ -225,14 +225,8 @@ android {
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
             } else {
-                // No keystore.properties on this machine, so debug falls back to the auto-generated
-                // debug key and can NOT replace an installed release build (INSTALL_FAILED_UPDATE_
-                // INCOMPATIBLE). Suffixing the applicationId lets the debug build sit side by side
-                // with the daily driver instead of forcing an uninstall that would wipe the signed-in
-                // OAuth state. All manifest authorities already interpolate ${applicationId}, so they
-                // follow the suffix automatically. When the release keystore IS present this branch
-                // is skipped and debug keeps replacing release in place, exactly as before.
-                applicationIdSuffix ".debug"
+                // Keep package com.comettube for all builds
+                // applicationIdSuffix ".debug"
             }
         }
         benchmark {
@@ -303,11 +297,7 @@ android {
     // flavor so its source set (src/stmobile/) keeps applying without a directory move.
     productFlavors {
         stmobile {
-            // Brand-neutral, GitHub-verifiable applicationId (io.github.<user>.*) chosen so the
-            // package name never has to change if the app is ever renamed — "arc" ties to the
-            // arch-"n" launcher mark (Catalan for "arch"). This ID is permanent once released;
-            // do not couple it to the marketing name. See docs/gtm + the legal-risk memo.
-            applicationId "io.github.aleixrodriala.arc"
+            applicationId "com.comettube"
             minSdk = 24 // media3 1.10.x floor is 23; 24 = project-wide minimum
             targetSdk = project.ext.targetSdkVersion
             // NewTube versions independently of upstream SmartTube (defaultConfig carries the

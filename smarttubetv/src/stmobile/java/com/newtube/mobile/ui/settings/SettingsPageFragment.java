@@ -27,6 +27,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
 import com.liskovsoft.smartyoutubetv2.tv.R;
 import com.newtube.mobile.ui.common.MobileSnackbar;
+import com.newtube.mobile.ui.common.ThemeMode;
 
 import java.util.List;
 
@@ -79,9 +80,54 @@ public final class SettingsPageFragment extends Fragment implements SettingsAdap
         requireArguments().remove(ARG_HIGHLIGHT);
     }
 
+    private int mSecretTapCount = 0;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        if (SettingsPages.ABOUT.equals(mPageId)) {
+            View view = inflater.inflate(R.layout.fragment_mobile_about_comet, container, false);
+            view.findViewById(R.id.settings_back).setOnClickListener(
+                    v -> requireActivity().getOnBackPressedDispatcher().onBackPressed());
+
+            View secretBtn = view.findViewById(R.id.btn_marcon_secret_mode);
+            TextView secretSub = view.findViewById(R.id.txt_secret_mode_sub);
+            if (ThemeMode.isFemboyMode()) {
+                secretSub.setText("Femboy Mode Active 🎀");
+            }
+            secretBtn.setOnClickListener(v -> {
+                if (ThemeMode.isFemboyMode()) {
+                    android.widget.Toast.makeText(requireContext(), "Femboy Mode is already active! 🎀", android.widget.Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                mSecretTapCount++;
+                if (mSecretTapCount < 5) {
+                    int remaining = 5 - mSecretTapCount;
+                    android.widget.Toast.makeText(requireContext(),
+                            "Click again " + remaining + " " + (remaining == 1 ? "time" : "times") + " to unlock secret mode",
+                            android.widget.Toast.LENGTH_SHORT).show();
+                } else {
+                    mSecretTapCount = 0;
+                    new MaterialAlertDialogBuilder(requireContext())
+                            .setTitle("✨ Secret Mode Unlocked")
+                            .setMessage("Femboy Mode Activated")
+                            .setPositiveButton("Yay! 🎀", (d, w) -> {
+                                ThemeMode.setFemboyMode(requireActivity(), true);
+                            })
+                            .show();
+                }
+            });
+
+            view.findViewById(R.id.row_forked_from).setOnClickListener(v ->
+                    Utils.openLinkExt(requireContext(), "https://github.com/marlon-og/newtube"));
+            view.findViewById(R.id.row_source_code).setOnClickListener(v ->
+                    android.widget.Toast.makeText(requireContext(), "Source code repository coming soon!", android.widget.Toast.LENGTH_SHORT).show());
+            view.findViewById(R.id.row_license).setOnClickListener(v ->
+                    android.widget.Toast.makeText(requireContext(), "License: Apache 2.0", android.widget.Toast.LENGTH_SHORT).show());
+
+            return view;
+        }
+
         View view = inflater.inflate(R.layout.fragment_mobile_settings_page, container, false);
         mTitle = view.findViewById(R.id.settings_title);
         mList = view.findViewById(R.id.settings_list);
@@ -171,7 +217,7 @@ public final class SettingsPageFragment extends Fragment implements SettingsAdap
 
     /** Builds the page again: its rows, and which of them exist, may depend on other values. */
     public void rebuild() {
-        if (getContext() == null || mAdapter == null) {
+        if (getContext() == null || mAdapter == null || mTitle == null) {
             return;
         }
         SettingsPages.Page page = SettingsPages.build(requireContext(), mPageId);

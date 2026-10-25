@@ -147,6 +147,24 @@
         <item name="newtubeColorCommentParent">@color/mobile_pure_black_surface</item>
     </style>
 
+    <!-- CometTube: Marcon's Secret Femboy Mode Theme Overlay -->
+    <style name="ThemeOverlay.CometTube.Femboy" parent="">
+        <item name="colorPrimary">@color/femboy_pink_primary</item>
+        <item name="colorSecondary">@color/femboy_pink_primary</item>
+        <item name="colorAccent">@color/femboy_pink_accent</item>
+        <item name="colorControlActivated">@color/femboy_pink_accent</item>
+        <item name="newtubeColorBackground">@color/femboy_pink_background</item>
+        <item name="newtubeColorNavigationBar">@color/femboy_pink_background</item>
+        <item name="newtubeColorBackgroundScrim">#99160510</item>
+        <item name="newtubeColorField">@color/femboy_pink_surface</item>
+        <item name="newtubeColorSurface">@color/femboy_pink_surface</item>
+        <item name="newtubeColorCard">@color/femboy_pink_card</item>
+        <item name="newtubeColorCommentParent">@color/femboy_pink_surface</item>
+        <item name="android:colorBackground">@color/femboy_pink_background</item>
+        <item name="android:statusBarColor">@color/femboy_pink_background</item>
+        <item name="android:navigationBarColor">@color/femboy_pink_background</item>
+    </style>
+
     <style name="ThemeOverlay.NewTube.BottomSheetDialog" parent="ThemeOverlay.MaterialComponents.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/Widget.NewTube.BottomSheet</item>
         <!-- ElevationOverlayProvider reads this off the THEME, not off the widget style.
@@ -376,8 +394,10 @@
          theirs side-by-side; the old 10sp-medium choice predates dropping the long
          "Listas de reproducción" label from the bar). -->
     <style name="MobileBottomNavText" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:textSize">11sp</item>
-        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
     </style>
 
     <!-- Watch-page loading skeleton (alpha-pulsed from code while related videos load). -->

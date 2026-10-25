@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <!-- Outer circle -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="3.2"
+        android:pathData="M32,32 m-27,0 a27,27 0 1,0 54,0 a27,27 0 1,0 -54,0" />
+    <!-- Horizontal equator -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="3.2"
+        android:pathData="M5,32 L59,32" />
+    <!-- Upper latitude -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="2.8"
+        android:pathData="M11,18 Q32,23 53,18" />
+    <!-- Lower latitude -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="2.8"
+        android:pathData="M11,46 Q32,41 53,46" />
+    <!-- Central meridian -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="3.2"
+        android:pathData="M32,5 L32,59" />
+    <!-- Elliptical meridian -->
+    <path
+        android:strokeColor="#007AFF"
+        android:strokeWidth="2.8"
+        android:pathData="M32,5 C45,15 45,49 32,59 C19,49 19,15 32,5 Z" />
+</vector>

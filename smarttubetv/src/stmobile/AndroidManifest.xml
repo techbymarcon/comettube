@@ -103,11 +103,24 @@
             tools:replace="android:launchMode,android:configChanges" />
 
         <activity
+            android:name="com.newtube.mobile.ui.setup.CometSetupActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection|keyboardHidden|uiMode"
+            android:theme="@style/Theme.NewTube" />
+
+        <activity
             android:name="com.newtube.mobile.ui.browse.MobileBrowseActivity"
             android:exported="false"
             android:launchMode="singleTop"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|layoutDirection|keyboardHidden|uiMode"
             android:screenOrientation="unspecified"
+            android:theme="@style/Theme.NewTube" />
+
+        <activity
+            android:name="com.newtube.mobile.ui.common.LiquidGlassNavigationDemoActivity"
+            android:exported="false"
+            android:label="Liquid Glass demo"
             android:theme="@style/Theme.NewTube" />
 
         <!--

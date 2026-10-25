@@ -142,8 +142,8 @@ public final class SettingsPages {
                 context.getString(R.string.mobile_settings_backup_summary), BACKUP));
         rows.add(SettingsRow.page(R.drawable.ic_settings_advanced, context.getString(R.string.mobile_settings_advanced),
                 context.getString(R.string.mobile_settings_advanced_summary), ADVANCED));
-        rows.add(SettingsRow.page(R.drawable.ic_settings_about, context.getString(R.string.mobile_settings_about),
-                versionLine(context), ABOUT));
+        rows.add(SettingsRow.page(R.drawable.ic_comet_logo, "About Comet",
+                "CometTube 1.0", ABOUT));
 
         return new Page(context.getString(R.string.header_settings), rows);
     }

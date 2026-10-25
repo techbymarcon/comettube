@@ -38,6 +38,8 @@ public class VideoCardAdapter extends ListAdapter<Video, RecyclerView.ViewHolder
     private static final int VIEW_TYPE_VIDEO = 0;
     /** Channel result row (round avatar + name + subs) — e.g. channels in search results. */
     private static final int VIEW_TYPE_CHANNEL = 1;
+    /** YouTube Shorts card (9:16 vertical thumbnail + title/views overlay). */
+    private static final int VIEW_TYPE_SHORTS = 2;
 
     public interface OnVideoClickListener {
         void onVideoClick(Video video);
@@ -91,7 +93,13 @@ public class VideoCardAdapter extends ListAdapter<Video, RecyclerView.ViewHolder
         // (videoId/playlistId null + a VL... channelId — the standard shape of the user
         // Playlists section): those must stay thumbnail cards, not round-avatar channel rows.
         Video item = getItem(position);
-        return item.isChannel() && !item.isPlaylistAsChannel() ? VIEW_TYPE_CHANNEL : VIEW_TYPE_VIDEO;
+        if (item != null && item.isChannel() && !item.isPlaylistAsChannel()) {
+            return VIEW_TYPE_CHANNEL;
+        }
+        if (item != null && (item.isShorts || item.belongsToShorts())) {
+            return VIEW_TYPE_SHORTS;
+        }
+        return VIEW_TYPE_VIDEO;
     }
 
     /**
@@ -140,6 +148,8 @@ public class VideoCardAdapter extends ListAdapter<Video, RecyclerView.ViewHolder
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
         if (viewType == VIEW_TYPE_CHANNEL) {
             return new ChannelViewHolder(inflater.inflate(R.layout.item_mobile_channel_card, parent, false), mClickListener);
+        } else if (viewType == VIEW_TYPE_SHORTS) {
+            return new VideoViewHolder(inflater.inflate(R.layout.item_shorts_card, parent, false), mClickListener);
         }
         return new VideoViewHolder(inflater.inflate(R.layout.item_video_card, parent, false), mClickListener);
     }

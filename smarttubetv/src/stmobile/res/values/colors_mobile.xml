@@ -3,23 +3,19 @@
     <!-- NEWTUBE(theme): these are the LIGHT values; values-night/colors_mobile.xml holds the dark
          ones (the palette the app shipped before the Theme setting, unchanged). A colour with no
          night entry is the same in both themes: the accent, and everything drawn over pictures. -->
-    <color name="mobile_color_primary">#FF0000</color>
-    <color name="mobile_color_primary_dark">#CC0000</color>
-    <!-- Cast: the only place the app tints an icon to show a live connection. Was the stock
-         Material pink (#FF4081) inherited from the theme's colorAccent, which leaked into
-         every checkbox, radio, caret and untinted spinner - see Theme.NewTube. -->
-    <color name="mobile_color_cast_active">#065FD4</color>
-    <color name="mobile_color_background">#FFFFFF</color>
+    <color name="mobile_color_primary">#3894FF</color>
+    <color name="mobile_color_primary_dark">#0066FF</color>
+    <!-- Cast: tinted with radiant comet blue -->
+    <color name="mobile_color_cast_active">#3894FF</color>
+    <color name="mobile_color_background">#F8F8FA</color>
     <color name="mobile_color_surface">#FFFFFF</color>
-    <color name="mobile_color_on_surface">#0F0F0F</color>
-    <color name="mobile_color_on_surface_secondary">#606060</color>
+    <color name="mobile_color_on_surface">#111111</color>
+    <color name="mobile_color_on_surface_secondary">#6E6E73</color>
     <color name="mobile_color_badge_bg">#CC000000</color>
     <color name="mobile_color_badge_live_bg">#CCD32F2F</color>
     <color name="mobile_color_progress_track">#33FFFFFF</color>
-    <!-- NEWTUBE(seek bar): YouTube's red since its 2024 refresh, the seek bar's played colour
-         (PlayerTimeBar.PLAYED_COLOR), so every progress line - watched bars on thumbnails, the
-         mini player's - matches the player's. -->
-    <color name="mobile_color_progress">#FF0033</color>
+    <!-- CometTube seek bar progress -->
+    <color name="mobile_color_progress">#3894FF</color>
     <color name="mobile_color_placeholder">#E5E5E5</color>
     <!-- NEWTUBE(motion): the light that sweeps over skeleton blocks (ShimmerLinearLayout). -->
     <color name="mobile_color_skeleton_highlight">#F6F6F6</color>
@@ -78,5 +74,12 @@
          YouTube's: controls and chips over the video, the mini player, the cast overlays. -->
     <color name="mobile_player_on_video">#FFFFFF</color>
     <color name="mobile_player_pill">#26FFFFFF</color>
-    <color name="mobile_player_cast_active">#4FC3F7</color>
+    <color name="mobile_player_cast_active">#7CB0FF</color>
+
+    <!-- CometTube Femboy Secret Mode -->
+    <color name="femboy_pink_primary">#FF69B4</color>
+    <color name="femboy_pink_accent">#FF1493</color>
+    <color name="femboy_pink_surface">#2B091E</color>
+    <color name="femboy_pink_background">#160510</color>
+    <color name="femboy_pink_card">#3D0C2A</color>
 </resources>

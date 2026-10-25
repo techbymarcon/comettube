@@ -546,19 +546,14 @@ public class MobileChannelActivity extends MobileActivity
             int id = group.getId();
             Section section = mSections.get(id);
             boolean isNewSection = section == null;
-            List<Video> shown = ShortsFilter.withoutShorts(group.getVideos()); // NEWTUBE(shorts)
+            boolean isShorts = ShortsFilter.isShortsSection(group.getTitle(), getString(R.string.header_shorts), group.getVideos());
+            List<Video> shown = isShorts ? group.getVideos() : ShortsFilter.withoutShorts(group.getVideos());
             boolean content = group.getAction() != VideoGroup.ACTION_REMOVE && group.getAction() != VideoGroup.ACTION_SYNC;
             int shortsDropped = (group.getVideos() != null ? group.getVideos().size() : 0)
                     - (shown != null ? shown.size() : 0);
             mShortsEmptied |= content && shortsDropped > 0;
-            // ...and no Shorts tab: the channel's Shorts section (emptied here, or already by the
-            // service under a stored "Hide shorts from a channel") never becomes a tab. Any other
-            // section keeps its tab while it has more to load, even if this page was all Shorts
-            // (its last Short is the next page's anchor); one with nothing now and nothing more to
-            // load, or nothing to continue from, is left out.
             if (isNewSection && content && (shown == null || shown.isEmpty())
-                    && (ShortsFilter.isShortsSection(group.getTitle(), getString(R.string.header_shorts), group.getVideos())
-                        || group.getNextPageKey() == null || group.isEmpty())) {
+                    && (group.getNextPageKey() == null || group.isEmpty())) {
                 return;
             }
 

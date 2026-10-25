@@ -38,6 +38,7 @@ import android.view.WindowInsets;
 import android.view.animation.DecelerateInterpolator;
 import android.view.WindowInsetsController;
 import android.view.WindowManager;
+import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -8146,14 +8147,31 @@ public class MobilePlaybackActivity extends MobileActivity
         boolean on = buttonState == BUTTON_ON;
 
         if (buttonId == R.id.action_thumbs_up && mWatchLikeIcon != null) {
-            // NEWTUBE(icons): filled while on, outlined while off, both in the text colour - the
-            // CC button's language. A red tint on the active thumb broke the no-tints rule.
             mWatchLikeIcon.setImageResource(on ? R.drawable.ic_watch_thumb_up : R.drawable.ic_watch_thumb_up_outline);
+            if (on) {
+                int activeTint = ThemeMode.isFemboyMode()
+                        ? Color.parseColor("#FF69B4") : getColorInt(R.color.mobile_color_primary);
+                mWatchLikeIcon.setColorFilter(activeTint);
+                mWatchLikeIcon.animate()
+                        .scaleX(1.32f).scaleY(1.32f).setDuration(140)
+                        .setInterpolator(new OvershootInterpolator(2.5f))
+                        .withEndAction(() -> mWatchLikeIcon.animate().scaleX(1f).scaleY(1f).setDuration(120).start())
+                        .start();
+            } else {
+                mWatchLikeIcon.clearColorFilter();
+            }
             if (mWatchLike != null) {
                 mWatchLike.setSelected(on);
             }
         } else if (buttonId == R.id.action_thumbs_down && mWatchDislikeIcon != null) {
             mWatchDislikeIcon.setImageResource(on ? R.drawable.ic_watch_thumb_down : R.drawable.ic_watch_thumb_down_outline);
+            if (on) {
+                mWatchDislikeIcon.animate()
+                        .scaleX(1.28f).scaleY(1.28f).setDuration(140)
+                        .setInterpolator(new OvershootInterpolator(2.0f))
+                        .withEndAction(() -> mWatchDislikeIcon.animate().scaleX(1f).scaleY(1f).setDuration(120).start())
+                        .start();
+            }
             if (mWatchDislike != null) {
                 mWatchDislike.setSelected(on);
             }
@@ -8168,12 +8186,18 @@ public class MobilePlaybackActivity extends MobileActivity
             }
         } else if (buttonId == R.id.action_subscribe && mWatchSubscribe != null) {
             mWatchSubscribe.setText(on ? R.string.mobile_watch_subscribed : R.string.mobile_watch_subscribe);
-            // NEWTUBE(theme): the main-action pill while not subscribed (white on the dark page,
-            // near-black on the light one), the quiet grey once subscribed.
-            mWatchSubscribe.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
-                    getColorInt(on ? R.color.mobile_color_subscribed_button : R.color.mobile_color_inverse_surface)));
+            int tintColor = on ? getColorInt(R.color.mobile_color_subscribed_button)
+                    : (ThemeMode.isFemboyMode() ? Color.parseColor("#FF69B4") : getColorInt(R.color.mobile_color_inverse_surface));
+            mWatchSubscribe.setBackgroundTintList(android.content.res.ColorStateList.valueOf(tintColor));
             mWatchSubscribe.setTextColor(getColorInt(on
                     ? R.color.mobile_color_on_surface : R.color.mobile_color_on_inverse_surface));
+            mWatchSubscribe.animate()
+                    .scaleX(0.92f).scaleY(0.92f).setDuration(100)
+                    .withEndAction(() -> mWatchSubscribe.animate()
+                            .scaleX(1.06f).scaleY(1.06f).setDuration(120)
+                            .withEndAction(() -> mWatchSubscribe.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start())
+                            .start())
+                    .start();
         }
     }
 

@@ -21,6 +21,9 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.ReplacementSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
+import android.graphics.Color;
+import android.view.animation.OvershootInterpolator;
+import com.newtube.mobile.ui.common.ThemeMode;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -639,10 +642,23 @@ final class CommentsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder
             }
             Context context = itemView.getContext();
             mLikeIcon.setImageResource(entry.liked ? R.drawable.ic_watch_thumb_up : R.drawable.ic_watch_thumb_up_outline);
-            mLikeIcon.setColorFilter(ContextCompat.getColor(context,
-                    entry.liked ? R.color.mobile_color_on_surface : R.color.mobile_color_on_surface_secondary));
-            int countColor = ContextCompat.getColor(context,
-                    entry.liked ? R.color.mobile_color_on_surface : R.color.mobile_color_on_surface_secondary);
+
+            int activeColor = ThemeMode.isFemboyMode()
+                    ? Color.parseColor("#FF69B4")
+                    : ContextCompat.getColor(context, R.color.mobile_color_primary);
+            mLikeIcon.setColorFilter(entry.liked ? activeColor
+                    : ContextCompat.getColor(context, R.color.mobile_color_on_surface_secondary));
+
+            if (entry.liked && animate) {
+                mLikeIcon.animate()
+                        .scaleX(1.35f).scaleY(1.35f).setDuration(140)
+                        .setInterpolator(new OvershootInterpolator(2.2f))
+                        .withEndAction(() -> mLikeIcon.animate().scaleX(1f).scaleY(1f).setDuration(120).start())
+                        .start();
+            }
+
+            int countColor = entry.liked ? activeColor
+                    : ContextCompat.getColor(context, R.color.mobile_color_on_surface_secondary);
             mLikeCount.setTextColor(countColor);
             mLikeCountNext.setTextColor(countColor);
 

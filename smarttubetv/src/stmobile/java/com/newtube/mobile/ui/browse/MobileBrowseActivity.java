@@ -26,6 +26,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -131,15 +133,11 @@ public class MobileBrowseActivity extends MobileActivity
      */
     private static final int[] PREFERRED_SECTION_IDS = {
             MediaGroup.TYPE_HOME,
-            MediaGroup.TYPE_SUBSCRIPTIONS,
-            MediaGroup.TYPE_HISTORY,
-            VideoDownloads.SECTION_ID,
+            MediaGroup.TYPE_SHORTS,
     };
     private static final int[] PREFERRED_SECTION_TITLE_RES = {
             R.string.header_home,
-            R.string.header_subscriptions,
-            R.string.header_history,
-            R.string.header_downloads,
+            R.string.header_shorts,
     };
 
     private BrowsePresenter mPresenter;
@@ -241,7 +239,7 @@ public class MobileBrowseActivity extends MobileActivity
 
     @Override
     protected boolean shouldInsetContentForNavigationBar() {
-        // BottomNavigationView paints through the gesture area and applies that inset internally.
+        // Full bleed under the floating liquid glass dock
         return false;
     }
 
@@ -255,6 +253,11 @@ public class MobileBrowseActivity extends MobileActivity
         // mini card; ordinary navigation still uses BrowseWindowAnimation's quick fade.
 
         setContentView(R.layout.activity_mobile_browse);
+
+        if (!com.newtube.mobile.ui.setup.CometSetupActivity.isCompleted(this)) {
+            startActivity(new Intent(this, com.newtube.mobile.ui.setup.CometSetupActivity.class));
+            overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        }
 
         registerBackHandler(this::handleBack);
 
@@ -932,6 +935,32 @@ public class MobileBrowseActivity extends MobileActivity
     }
 
     private void setupBottomNav() {
+        if (mBottomNav instanceof com.newtube.mobile.ui.common.LiquidBottomNavigationView) {
+            com.newtube.mobile.ui.common.LiquidBottomNavigationView liquidNav =
+                    (com.newtube.mobile.ui.common.LiquidBottomNavigationView) mBottomNav;
+            liquidNav.setBackdropSourceView(mContentSwipe);
+            if (mContentGrid != null) {
+                mContentGrid.addOnScrollListener(new androidx.recyclerview.widget.RecyclerView.OnScrollListener() {
+                    @Override
+                    public void onScrolled(@NonNull androidx.recyclerview.widget.RecyclerView recyclerView, int dx, int dy) {
+                        liquidNav.invalidate();
+                    }
+                });
+            }
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(mBottomNav, (v, insets) -> {
+            androidx.core.graphics.Insets navInsets = insets.getInsets(
+                    WindowInsetsCompat.Type.navigationBars() | WindowInsetsCompat.Type.displayCutout());
+            ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) v.getLayoutParams();
+            int defaultMarginBottom = v.getResources().getDimensionPixelSize(R.dimen.mobile_bottom_nav_margin_bottom);
+            int targetMargin = defaultMarginBottom + navInsets.bottom;
+            if (lp.bottomMargin != targetMargin) {
+                lp.bottomMargin = targetMargin;
+                v.setLayoutParams(lp);
+            }
+            return insets;
+        });
         mBottomNav.setOnItemSelectedListener(item -> {
             if (!mSuppressNavCallback) {
                 onNavItemChosen(item.getItemId());
@@ -992,6 +1021,13 @@ public class MobileBrowseActivity extends MobileActivity
         // browsing signed-out with stored accounts, so they stay re-selectable).
         View accountRow = findViewById(R.id.mobile_you_account_row);
         accountRow.setOnClickListener(v -> AccountsSheet.show(this, this::updateAccountRow));
+        if (mYouPanel != null) {
+            mYouPanel.setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+                if (mBottomNav instanceof com.newtube.mobile.ui.common.LiquidBottomNavigationView) {
+                    mBottomNav.invalidate();
+                }
+            });
+        }
     }
 
     /** Show the You panel over the content area (the panel is opaque; the grid stays put). */
@@ -1002,12 +1038,20 @@ public class MobileBrowseActivity extends MobileActivity
         updateAccountRow();
         mContentSwipe.setRefreshing(false);
         mYouPanel.setVisibility(View.VISIBLE);
+        if (mBottomNav instanceof com.newtube.mobile.ui.common.LiquidBottomNavigationView) {
+            ((com.newtube.mobile.ui.common.LiquidBottomNavigationView) mBottomNav).setBackdropSourceView(mYouPanel);
+            mBottomNav.invalidate();
+        }
         onYouPanelToggled();
     }
 
     private void hideYouPanel() {
         mYouShowing = false;
         mYouPanel.setVisibility(View.GONE);
+        if (mBottomNav instanceof com.newtube.mobile.ui.common.LiquidBottomNavigationView) {
+            ((com.newtube.mobile.ui.common.LiquidBottomNavigationView) mBottomNav).setBackdropSourceView(mContentSwipe);
+            mBottomNav.invalidate();
+        }
         onYouPanelToggled();
     }
 
@@ -1036,6 +1080,9 @@ public class MobileBrowseActivity extends MobileActivity
      */
     private static boolean isPersonalSection(int sectionId) {
         switch (sectionId) {
+            case MediaGroup.TYPE_SUBSCRIPTIONS:
+            case MediaGroup.TYPE_HISTORY:
+            case VideoDownloads.SECTION_ID:
             case MediaGroup.TYPE_USER_PLAYLISTS:
             case MediaGroup.TYPE_MY_VIDEOS:
             case MediaGroup.TYPE_CHANNEL_UPLOADS:
@@ -1047,13 +1094,12 @@ public class MobileBrowseActivity extends MobileActivity
         }
     }
 
+    private boolean mExploreExpanded = false;
+
     /**
      * Rebuild the panel's section list, grouped like the official You page: the user's own
      * content first (Playlists, My videos, Channels, ...), then the discovery feeds under an
-     * "Explore" label, then Settings behind a divider. Sections shown in the bottom nav (and
-     * Settings/Shorts) are excluded - Settings gets its own trailing row, and NewTube has no
-     * Shorts (see ShortsFilter). Long-press on a section row opens the section-management menu
-     * (the old drawer rows' "..." overflow).
+     * "Explore" label, then Settings behind a divider.
      */
     private void rebuildYouRows() {
         mYouRows.removeAllViews();
@@ -1063,6 +1109,10 @@ public class MobileBrowseActivity extends MobileActivity
             addYouUpdateRow();
         }
 
+        // Second item right under the account row: Comet Settings
+        addYouRow(R.drawable.ic_mobile_settings, "Comet Settings", this::openSettings);
+        addYouDivider();
+
         List<BrowseSection> navSections = selectNavSections();
         List<BrowseSection> personal = new ArrayList<>();
         List<BrowseSection> pinned = new ArrayList<>();
@@ -1071,12 +1121,9 @@ public class MobileBrowseActivity extends MobileActivity
         for (BrowseSection section : mSections) {
             if (!section.isEnabled()
                     || navSections.contains(section)
-                    || section.getId() == MediaGroup.TYPE_SETTINGS
-                    || section.getId() == MediaGroup.TYPE_SHORTS) {
+                    || section.getId() == MediaGroup.TYPE_SETTINGS) {
                 continue;
             }
-            // NEWTUBE(menu): channels/playlists pinned from a card menu ("Pin to You") carry the
-            // pinned Video as their data; they get their own group instead of mixing into Explore.
             if (section.getData() instanceof Video) {
                 pinned.add(section);
                 continue;
@@ -1096,24 +1143,50 @@ public class MobileBrowseActivity extends MobileActivity
         }
 
         if (!explore.isEmpty()) {
-            addYouGroupLabel(getString(R.string.mobile_you_explore));
-            for (BrowseSection section : explore) {
-                addYouSectionRow(section);
-            }
+            addYouExploreDropdown(explore);
         }
+    }
 
-        addYouDivider();
-        addYouRow(R.drawable.ic_mobile_settings, getString(R.string.header_settings),
-                this::openSettings);
+    private void addYouExploreDropdown(List<BrowseSection> explore) {
+        View header = LayoutInflater.from(this).inflate(R.layout.item_mobile_you_explore_dropdown, mYouRows, false);
+        ImageView chevron = header.findViewById(R.id.explore_dropdown_chevron);
+        TextView title = header.findViewById(R.id.explore_dropdown_title);
+        title.setText(R.string.mobile_you_explore);
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setVisibility(mExploreExpanded ? View.VISIBLE : View.GONE);
+        chevron.setRotation(mExploreExpanded ? 90f : 0f);
+
+        header.setOnClickListener(v -> {
+            mExploreExpanded = !mExploreExpanded;
+            container.setVisibility(mExploreExpanded ? View.VISIBLE : View.GONE);
+            chevron.animate().rotation(mExploreExpanded ? 90f : 0f).setDuration(200).start();
+            if (mBottomNav != null) {
+                mBottomNav.invalidate();
+            }
+        });
+
+        mYouRows.addView(header);
+        mYouRows.addView(container);
+
+        for (BrowseSection section : explore) {
+            addYouSectionRowTo(container, section);
+        }
     }
 
     private void addYouSectionRow(BrowseSection section) {
+        addYouSectionRowTo(mYouRows, section);
+    }
+
+    private void addYouSectionRowTo(ViewGroup parent, BrowseSection section) {
         int sectionId = section.getId();
-        View row = addYouRow(section.getResId(), section.getTitle(), () -> {
+        int iconRes = navIconOrResFor(section);
+        View row = addYouRowTo(parent, iconRes, section.getTitle(), () -> {
             mSectionFromYou = true;
             hideYouPanel();
             onSectionChosen(sectionId);
-            onYouPanelToggled(); // now that the chosen section is current: its name in the top bar
+            onYouPanelToggled();
         });
         row.setOnLongClickListener(v -> {
             if (mPresenter != null) {
@@ -1242,7 +1315,11 @@ public class MobileBrowseActivity extends MobileActivity
     }
 
     private View addYouRow(int iconRes, CharSequence title, Runnable action) {
-        View row = LayoutInflater.from(this).inflate(R.layout.item_mobile_you_row, mYouRows, false);
+        return addYouRowTo(mYouRows, iconRes, title, action);
+    }
+
+    private View addYouRowTo(ViewGroup parent, int iconRes, CharSequence title, Runnable action) {
+        View row = LayoutInflater.from(this).inflate(R.layout.item_mobile_you_row, parent, false);
 
         ImageView icon = row.findViewById(R.id.mobile_you_row_icon);
         if (iconRes > 0) {
@@ -1252,7 +1329,7 @@ public class MobileBrowseActivity extends MobileActivity
         label.setText(title);
 
         row.setOnClickListener(v -> action.run());
-        mYouRows.addView(row);
+        parent.addView(row);
         return row;
     }
 
@@ -1273,6 +1350,7 @@ public class MobileBrowseActivity extends MobileActivity
 
         boolean switched = mCurrentSectionId != sectionId;
         mCurrentSectionId = sectionId;
+        updateGridSpanCount(computeSpanCount());
         paintCachedSnapshot(sectionId, switched);
         syncNavHighlight(sectionId);
 
@@ -1537,7 +1615,11 @@ public class MobileBrowseActivity extends MobileActivity
     };
 
     private int computeSpanCount() {
-        return com.newtube.mobile.ui.common.MobileGrid.computeSpanCount(this);
+        int base = com.newtube.mobile.ui.common.MobileGrid.computeSpanCount(this);
+        if (mCurrentSectionId == MediaGroup.TYPE_SHORTS) {
+            return Math.max(2, base * 2);
+        }
+        return base;
     }
 
     private static int toMenuItemId(int sectionId) {
@@ -1782,6 +1864,8 @@ public class MobileBrowseActivity extends MobileActivity
         switch (sectionId) {
             case MediaGroup.TYPE_HOME:
                 return R.drawable.ic_nav_home;
+            case MediaGroup.TYPE_SHORTS:
+                return R.drawable.ic_nav_shorts;
             case MediaGroup.TYPE_SUBSCRIPTIONS:
                 return R.drawable.ic_nav_subscriptions;
             case MediaGroup.TYPE_HISTORY:
@@ -1811,7 +1895,7 @@ public class MobileBrowseActivity extends MobileActivity
 
         List<BrowseSection> chosen = new ArrayList<>();
 
-        for (int i = 0; i < PREFERRED_SECTION_IDS.length && chosen.size() < MAX_NAV_ITEMS; i++) {
+        for (int i = 0; i < PREFERRED_SECTION_IDS.length && chosen.size() < (MAX_NAV_ITEMS - 1); i++) {
             BrowseSection match = findPreferredSection(
                     enabledSections, chosen, PREFERRED_SECTION_IDS[i], PREFERRED_SECTION_TITLE_RES[i]);
 
@@ -2007,7 +2091,8 @@ public class MobileBrowseActivity extends MobileActivity
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
 
-        updateGridSpanCount(com.newtube.mobile.ui.common.MobileGrid.computeSpanCount(newConfig));
+        int base = com.newtube.mobile.ui.common.MobileGrid.computeSpanCount(newConfig);
+        updateGridSpanCount(mCurrentSectionId == MediaGroup.TYPE_SHORTS ? Math.max(2, base * 2) : base);
     }
 
     // NEWTUBE(ui-mode): a recreated Browse (any config change the manifest doesn't absorb, or
@@ -2147,6 +2232,7 @@ public class MobileBrowseActivity extends MobileActivity
             hideYouPanel();
             boolean switched = mCurrentSectionId != section.getId();
             mCurrentSectionId = section.getId();
+            updateGridSpanCount(computeSpanCount());
             paintCachedSnapshot(section.getId(), switched);
 
             // The section may not be one of the sections shown in the bottom nav - e.g. the
@@ -2483,7 +2569,7 @@ public class MobileBrowseActivity extends MobileActivity
      * has no Shorts, so none are shown in any section ({@link ShortsFilter}). Keep true playlists
      * (which use a similar service shape), and leave channel discovery to Search.
      */
-    private static List<Video> visibleFeedItems(List<Video> videos) {
+    private List<Video> visibleFeedItems(List<Video> videos) {
         List<Video> visible = new ArrayList<>();
         if (videos == null) {
             return visible;
@@ -2496,9 +2582,9 @@ public class MobileBrowseActivity extends MobileActivity
         return visible;
     }
 
-    private static boolean isVisibleFeedItem(Video video) {
+    private boolean isVisibleFeedItem(Video video) {
         return video != null
-                && !ShortsFilter.isShort(video)
+                && (mCurrentSectionId == MediaGroup.TYPE_SHORTS || !ShortsFilter.isShort(video))
                 && (!video.isChannel() || video.isPlaylistAsChannel())
                 && !isSearchQueryTile(video);
     }

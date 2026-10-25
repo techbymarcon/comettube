@@ -73,7 +73,19 @@ public final class ThemeMode {
 
     private static volatile int sMode = SYSTEM;
     private static volatile boolean sPureBlack;
+    private static volatile boolean sFemboyMode;
     private static final List<WeakReference<MobileActivity>> sScreens = new ArrayList<>();
+
+    public static boolean isFemboyMode() {
+        return sFemboyMode;
+    }
+
+    public static void setFemboyMode(@NonNull Activity activity, boolean enabled) {
+        sFemboyMode = enabled;
+        for (MobileActivity screen : liveScreens()) {
+            screen.recreate();
+        }
+    }
 
     private ThemeMode() {
     }
@@ -88,7 +100,7 @@ public final class ThemeMode {
     public static void init(@NonNull Application app, boolean existingInstall) {
         SharedPreferences prefs = prefs(app);
         if (!prefs.contains(KEY_MODE)) {
-            int initial = existingInstall ? DARK : SYSTEM;
+            int initial = DARK;
             prefs.edit().putInt(KEY_MODE, initial).apply();
             NetPath.log("theme default mode=" + name(initial) + " existing=" + (existingInstall ? "y" : "n"));
         }
@@ -182,7 +194,9 @@ public final class ThemeMode {
      * is {@link #syncResources}'s job: a theme can't drop a style laid over it.
      */
     public static void applyPalette(@NonNull Context context) {
-        if (wantsPureBlack(context) && !hasPureBlack(context.getTheme())) {
+        if (sFemboyMode) {
+            context.getTheme().applyStyle(R.style.ThemeOverlay_CometTube_Femboy, true);
+        } else if (wantsPureBlack(context) && !hasPureBlack(context.getTheme())) {
             context.getTheme().applyStyle(R.style.ThemeOverlay_NewTube_PureBlack, true);
         }
     }
