@@ -1000,69 +1000,51 @@ public class MobileBrowseActivity extends MobileActivity
         }
     }
 
+    private static final java.util.Set<String> sSeenShortsIds = new java.util.HashSet<>();
+    private static final String[] SHORTS_RANDOM_QUERIES = {
+        "#shorts", "viral shorts", "trending shorts", "shorts funny", "shorts comedy",
+        "shorts gaming", "shorts entertainment", "shorts satisfaction", "shorts music", "shorts dance"
+    };
+    private static final String[] FEMBOY_SHORTS_QUERIES = {
+        "femboy cute aesthetic", "femboy shorts", "femboy tiktok", "cute femboy cosplay",
+        "kawaii femboy", "femboy style outfit", "femboy dance", "femboy anime aesthetic"
+    };
+
     private void openRandomShort() {
         if (ThemeMode.isFemboyMode()) {
             openRandomFemboyShort();
             return;
         }
 
-        // 1. Try to find cached shorts
-        List<Video> shorts = FeedCache.getOrRestore(MediaGroup.TYPE_SHORTS);
-        if (shorts == null || shorts.isEmpty()) {
-            shorts = new ArrayList<>();
-            if (mCurrentVideos != null) {
-                for (Video v : mCurrentVideos) {
-                    if (ShortsFilter.isShort(v)) {
-                        shorts.add(v);
-                    }
-                }
-            }
-            List<Video> homeVideos = FeedCache.get(MediaGroup.TYPE_HOME);
-            if (homeVideos != null) {
-                for (Video v : homeVideos) {
-                    if (ShortsFilter.isShort(v)) {
-                        shorts.add(v);
-                    }
-                }
-            }
-        }
-        if (shorts != null && !shorts.isEmpty()) {
-            launchRandomShortFromList(shorts);
-            return;
-        }
+        // Fresh session every time: clear cached feed and playlist
+        com.newtube.mobile.ui.playback.MobilePlaybackActivity.sShortsPlaylist = null;
 
-        // 2. Fetch fresh shorts using RxHelper
         mContentSwipe.setRefreshing(true);
         try {
             com.liskovsoft.mediaserviceinterfaces.ContentService service =
                     YouTubeServiceManager.instance().getContentService();
             if (service != null) {
-                com.liskovsoft.sharedutils.rx.RxHelper.execute(
-                        service.getShortsObserve(),
-                        group -> {
-                            runOnUiThread(() -> {
-                                mContentSwipe.setRefreshing(false);
-                                List<Video> videos = new ArrayList<>();
-                                if (group != null && group.getMediaItems() != null) {
-                                    for (MediaItem item : group.getMediaItems()) {
-                                        videos.add(Video.from(item));
-                                    }
-                                }
-                                if (!videos.isEmpty()) {
-                                    FeedCache.put(MediaGroup.TYPE_SHORTS, videos);
-                                    launchRandomShortFromList(videos);
-                                } else {
-                                    onSectionChosen(MediaGroup.TYPE_SHORTS);
-                                }
-                            });
-                        },
-                        err -> {
-                            runOnUiThread(() -> {
+                boolean useSearch = new java.util.Random().nextBoolean();
+                if (useSearch) {
+                    String query = SHORTS_RANDOM_QUERIES[new java.util.Random().nextInt(SHORTS_RANDOM_QUERIES.length)];
+                    com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                            service.getSearchObserve(query),
+                            this::handleShortsMediaGroups,
+                            err -> runOnUiThread(() -> {
                                 mContentSwipe.setRefreshing(false);
                                 onSectionChosen(MediaGroup.TYPE_SHORTS);
-                            });
-                        }
-                );
+                            })
+                    );
+                } else {
+                    com.liskovsoft.sharedutils.rx.RxHelper.execute(
+                            service.getShortsObserve(),
+                            this::handleShortsMediaGroup,
+                            err -> runOnUiThread(() -> {
+                                mContentSwipe.setRefreshing(false);
+                                onSectionChosen(MediaGroup.TYPE_SHORTS);
+                            })
+                    );
+                }
                 return;
             }
         } catch (Throwable t) {
@@ -1071,32 +1053,88 @@ public class MobileBrowseActivity extends MobileActivity
         onSectionChosen(MediaGroup.TYPE_SHORTS);
     }
 
+    private void handleShortsMediaGroup(MediaGroup group) {
+        runOnUiThread(() -> {
+            mContentSwipe.setRefreshing(false);
+            List<Video> raw = new ArrayList<>();
+            if (group != null && group.getMediaItems() != null) {
+                for (MediaItem item : group.getMediaItems()) {
+                    Video v = Video.from(item);
+                    if (v != null) raw.add(v);
+                }
+            }
+            processAndLaunchShorts(raw);
+        });
+    }
+
+    private void handleShortsMediaGroups(List<MediaGroup> groups) {
+        runOnUiThread(() -> {
+            mContentSwipe.setRefreshing(false);
+            List<Video> raw = new ArrayList<>();
+            if (groups != null) {
+                for (MediaGroup mg : groups) {
+                    if (mg != null && mg.getMediaItems() != null) {
+                        for (MediaItem item : mg.getMediaItems()) {
+                            Video v = Video.from(item);
+                            if (v != null) raw.add(v);
+                        }
+                    }
+                }
+            }
+            processAndLaunchShorts(raw);
+        });
+    }
+
+    private void processAndLaunchShorts(List<Video> raw) {
+        // Exclude old videos so they can't be found on the feed anymore
+        List<Video> fresh = new ArrayList<>();
+        for (Video v : raw) {
+            if (v != null && v.videoId != null && !sSeenShortsIds.contains(v.videoId)) {
+                fresh.add(v);
+            }
+        }
+        if (fresh.isEmpty()) {
+            sSeenShortsIds.clear();
+            fresh.addAll(raw);
+        }
+        if (!fresh.isEmpty()) {
+            java.util.Collections.shuffle(fresh);
+            for (Video v : fresh) {
+                if (v.videoId != null) sSeenShortsIds.add(v.videoId);
+            }
+            launchRandomShortFromList(fresh);
+        } else {
+            onSectionChosen(MediaGroup.TYPE_SHORTS);
+        }
+    }
+
     private void openRandomFemboyShort() {
+        com.newtube.mobile.ui.playback.MobilePlaybackActivity.sShortsPlaylist = null;
         mContentSwipe.setRefreshing(true);
         try {
             com.liskovsoft.mediaserviceinterfaces.ContentService service =
                     YouTubeServiceManager.instance().getContentService();
             if (service != null) {
+                String query = FEMBOY_SHORTS_QUERIES[new java.util.Random().nextInt(FEMBOY_SHORTS_QUERIES.length)];
                 com.liskovsoft.sharedutils.rx.RxHelper.execute(
-                        service.getSearchObserve("femboy shorts"),
+                        service.getSearchObserve(query),
                         groups -> {
                             runOnUiThread(() -> {
                                 mContentSwipe.setRefreshing(false);
-                                List<Video> results = new ArrayList<>();
+                                List<Video> raw = new ArrayList<>();
                                 if (groups != null) {
                                     for (MediaGroup mg : groups) {
                                         if (mg != null && mg.getMediaItems() != null) {
                                             for (MediaItem item : mg.getMediaItems()) {
-                                                results.add(Video.from(item));
+                                                Video v = Video.from(item);
+                                                if (v != null && isFemboyVideo(v)) {
+                                                    raw.add(v);
+                                                }
                                             }
                                         }
                                     }
                                 }
-                                if (!results.isEmpty()) {
-                                    launchRandomShortFromList(results);
-                                } else {
-                                    onSectionChosen(MediaGroup.TYPE_SHORTS);
-                                }
+                                processAndLaunchShorts(raw);
                             });
                         },
                         err -> {
@@ -1138,7 +1176,7 @@ public class MobileBrowseActivity extends MobileActivity
                                 }
                                 mCurrentVideos.clear();
                                 for (Video v : femboyVideos) {
-                                    if (v != null && !isSearchQueryTile(v)) {
+                                    if (v != null && !isSearchQueryTile(v) && isFemboyVideo(v)) {
                                         mCurrentVideos.add(v);
                                     }
                                 }

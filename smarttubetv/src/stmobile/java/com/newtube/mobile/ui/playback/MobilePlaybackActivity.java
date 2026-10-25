@@ -1250,6 +1250,12 @@ public class MobilePlaybackActivity extends MobileActivity
 
     private void applyShortsModeUI(boolean enabled) {
         mIsShortsMode = enabled;
+        if (mVideoArea != null) {
+            mVideoArea.animate().cancel();
+            mVideoArea.setTranslationY(0f);
+            mVideoArea.setAlpha(1.0f);
+        }
+        mIsAnimatingShort = false;
         if (mShortsOverlayRoot != null) {
             mShortsOverlayRoot.setVisibility(enabled ? View.VISIBLE : View.GONE);
         }
@@ -1306,31 +1312,78 @@ public class MobilePlaybackActivity extends MobileActivity
         }
     }
 
+    private boolean mIsAnimatingShort = false;
+
+    private void performShortSwipeTransition(boolean isNext, Runnable onSwapped) {
+        if (mVideoArea == null) {
+            if (onSwapped != null) onSwapped.run();
+            return;
+        }
+        mIsAnimatingShort = true;
+        int height = mVideoArea.getHeight();
+        if (height <= 0) {
+            height = getResources().getDisplayMetrics().heightPixels;
+        }
+        float exitTranslation = isNext ? -height * 0.45f : height * 0.45f;
+        float enterTranslation = isNext ? height * 0.45f : -height * 0.45f;
+
+        mVideoArea.animate()
+                .translationY(exitTranslation)
+                .alpha(0.5f)
+                .setDuration(160)
+                .setInterpolator(new android.view.animation.AccelerateInterpolator(1.2f))
+                .withEndAction(() -> {
+                    if (onSwapped != null) {
+                        onSwapped.run();
+                    }
+                    mVideoArea.setTranslationY(enterTranslation);
+                    mVideoArea.setAlpha(0.5f);
+                    mVideoArea.animate()
+                            .translationY(0f)
+                            .alpha(1.0f)
+                            .setDuration(190)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator(1.2f))
+                            .withEndAction(() -> {
+                                mVideoArea.setTranslationY(0f);
+                                mVideoArea.setAlpha(1.0f);
+                                mIsAnimatingShort = false;
+                            })
+                            .start();
+                })
+                .start();
+    }
+
     public void playNextShort() {
+        if (mIsAnimatingShort) return;
         if (sShortsPlaylist != null && !sShortsPlaylist.isEmpty()) {
             sCurrentShortIndex = (sCurrentShortIndex + 1) % sShortsPlaylist.size();
             com.liskovsoft.smartyoutubetv2.common.app.models.data.Video nextShort = sShortsPlaylist.get(sCurrentShortIndex);
             nextShort.isShorts = true;
             sForceShortsMode = true;
-            if (mPresenter != null) {
-                mPresenter.openVideo(nextShort);
-            }
+            performShortSwipeTransition(true, () -> {
+                if (mPresenter != null) {
+                    mPresenter.openVideo(nextShort);
+                }
+            });
         } else if (mPresenter != null) {
-            mPresenter.onNextClicked();
+            performShortSwipeTransition(true, () -> mPresenter.onNextClicked());
         }
     }
 
     public void playPreviousShort() {
+        if (mIsAnimatingShort) return;
         if (sShortsPlaylist != null && !sShortsPlaylist.isEmpty()) {
             sCurrentShortIndex = (sCurrentShortIndex - 1 + sShortsPlaylist.size()) % sShortsPlaylist.size();
             com.liskovsoft.smartyoutubetv2.common.app.models.data.Video prevShort = sShortsPlaylist.get(sCurrentShortIndex);
             prevShort.isShorts = true;
             sForceShortsMode = true;
-            if (mPresenter != null) {
-                mPresenter.openVideo(prevShort);
-            }
+            performShortSwipeTransition(false, () -> {
+                if (mPresenter != null) {
+                    mPresenter.openVideo(prevShort);
+                }
+            });
         } else if (mPresenter != null) {
-            mPresenter.onPreviousClicked();
+            performShortSwipeTransition(false, () -> mPresenter.onPreviousClicked());
         }
     }
 

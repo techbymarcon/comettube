@@ -81,9 +81,19 @@ public final class ThemeMode {
     }
 
     public static void setFemboyMode(@NonNull Activity activity, boolean enabled) {
+        if (sFemboyMode == enabled) {
+            return;
+        }
         sFemboyMode = enabled;
+        if (enabled) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        } else {
+            AppCompatDelegate.setDefaultNightMode(appCompatMode(sMode));
+        }
         for (MobileActivity screen : liveScreens()) {
-            screen.recreate();
+            if (!screen.isFinishing() && !screen.isDestroyed()) {
+                screen.recreate();
+            }
         }
     }
 
@@ -169,11 +179,17 @@ public final class ThemeMode {
 
     /** The look a screen should be drawn with now: {@link #desiredNight}, plus pure black. */
     public static int desiredLook(@NonNull Context context) {
+        if (sFemboyMode) {
+            return Configuration.UI_MODE_NIGHT_NO;
+        }
         return look(desiredNight(context), sPureBlack);
     }
 
     /** The look a themed context resolves with now: its night bits, plus pure black if its theme has it. */
     public static int currentLook(@NonNull Context context) {
+        if (sFemboyMode) {
+            return Configuration.UI_MODE_NIGHT_NO;
+        }
         return currentNight(context) | (hasPureBlack(context.getTheme()) ? LOOK_PURE_BLACK : 0);
     }
 
@@ -202,6 +218,9 @@ public final class ThemeMode {
     }
 
     private static boolean wantsPureBlack(@NonNull Context context) {
+        if (sFemboyMode) {
+            return false;
+        }
         return (look(currentNight(context), sPureBlack) & LOOK_PURE_BLACK) != 0;
     }
 
@@ -232,7 +251,9 @@ public final class ThemeMode {
         for (int style : styles) {
             fresh.applyStyle(style, true);
         }
-        if (pureBlack) {
+        if (sFemboyMode) {
+            fresh.applyStyle(R.style.ThemeOverlay_CometTube_Femboy, true);
+        } else if (pureBlack) {
             fresh.applyStyle(R.style.ThemeOverlay_NewTube_PureBlack, true);
         }
         return fresh;
@@ -367,6 +388,9 @@ public final class ThemeMode {
 
     /** {@link Configuration#UI_MODE_NIGHT_YES}/{@code NO} for a forced side, UNDEFINED for System default. */
     static int forcedNight(int mode) {
+        if (sFemboyMode) {
+            return Configuration.UI_MODE_NIGHT_NO;
+        }
         switch (mode) {
             case LIGHT:
                 return Configuration.UI_MODE_NIGHT_NO;
