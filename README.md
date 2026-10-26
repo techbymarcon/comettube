@@ -4,7 +4,7 @@
 
 # CometTube
 
-### Next-Generation YouTube Client with iOS-Style Liquid Glass UI & Advanced Playback
+### Next-Generation YouTube Client with Liquid Glass UI & No Ads
 
 [![Release: 1.0](https://img.shields.io/badge/Release-v1.0-3894FF?style=for-the-badge&logo=android&logoColor=white)](https://github.com/techbymarcon/comettube/releases)
 [![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B%20(API%2026--35%2B)-00C853?style=for-the-badge&logo=android&logoColor=white)](#download--installation)
@@ -13,7 +13,7 @@
 
 <br>
 
-**CometTube** is a high-performance, privacy-respecting YouTube client for Android phones and tablets, engineered with a custom **iOS Liquid Glass** floating navigation bar, native **YouTube Shorts** integration, pure OLED black theming, and smooth fluid micro-interactions.
+**CometTube** is a high-performance, privacy-respecting YouTube client for Android phones and tablets, engineered with a custom **Liquid Glass** floating navigation bar, native **YouTube Shorts** integration, pure OLED black theming, and smooth fluid micro-interactions.
 
 Built on the rock-solid media engine of **SmartTube** and touch foundation of **NewTube**, CometTube delivers an uncompromising mobile experience without Google Play Services or microG.
 
@@ -27,7 +27,7 @@ Built on the rock-solid media engine of **SmartTube** and touch foundation of **
 
 ## Key Features
 
-### 💎 iOS Liquid Glass Floating Dock
+### 💎 Liquid Glass Floating Dock
 * **Real Backdrop Sampling**: Live contents scroll underneath the floating capsule dock; the background is recorded into hardware `RenderNode` / `GraphicsLayer` buffers with zero viewport clipping.
 * **Dual-Pass AGSL Shader Pipeline**: Multi-pass directional Gaussian blur (`TileMode.MIRROR`) chained with Android Graphics Shading Language (AGSL API 33+) RuntimeShader computing inverse-power SDF edge refractions, chromatic dispersion, directional specular rim highlights, and vibrancy boosting.
 * **Interactive Ball Hold & Glide Physics**: Hold the active indicator ball to expand it into an enlarged 3D liquid glass droplet (`1.38x` expansion with haptic tick), then swipe horizontally to glide through tabs with velocity-based liquid squash and stretch. Releasing snaps the ball with harmonic spring physics directly onto the nearest tab.
